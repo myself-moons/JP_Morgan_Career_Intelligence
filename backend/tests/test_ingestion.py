@@ -224,5 +224,63 @@ def test_tc17_sqlite_persistence_reload():
             assert job.company is not None
             assert job.company.name == "JPMorgan Chase"
             assert job.created_at is not None
+            # Also verify structured sections populated by seeder
+            if job.status == "Available":
+                assert job.responsibilities is not None
+                assert job.qualifications is not None
     finally:
         db.close()
+
+
+@pytest.mark.asyncio
+async def test_auto_increment_next_code():
+    """Verify GET /api/jobs/next-code returns auto-incremented numerical code (JB-1, JB-2, etc.)."""
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        response = await client.get("/api/jobs/next-code")
+        assert response.status_code == 200
+        data = response.json()
+        assert "next_code" in data
+        assert data["next_code"].startswith("JB-")
+        num = int(data["next_code"].split("-")[1])
+        assert num >= 1
+
+
+@pytest.mark.asyncio
+async def test_parse_raw_text_and_sections():
+    """Verify POST /api/jobs/parse-text extracts metadata, sections, and warnings."""
+    sample_text = """
+    NORTHSTAR DIGITAL SOLUTIONS | CAREERS
+    Full Stack Software Developer
+    Company: Northstar Digital Solutions
+    Location: Goregaon, Mumbai
+
+    Job Responsibilities:
+    - Build scalable React and FastAPI applications.
+    - Write robust unit tests.
+
+    Required Qualifications:
+    - 3+ years experience with Python and TypeScript.
+    - Strong SQL capabilities.
+    """
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        response = await client.post(
+            "/api/jobs/parse-text",
+            json={"text": sample_text, "filename": "sample.txt"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "Full Stack Software Developer" in data["title"]
+        assert "Northstar" in data["company_name"]
+        assert "Goregaon, Mumbai" in data["location"]
+        assert "Family B" in data["role_family"]
+        assert data["responsibilities"] is not None
+        assert "Build scalable React" in data["responsibilities"]
+        assert data["qualifications"] is not None
+        assert "3+ years experience" in data["qualifications"]
+        # Preferred qualifications was absent, so warning should be present
+        assert "preferred_qualifications" in data["warnings"]
+

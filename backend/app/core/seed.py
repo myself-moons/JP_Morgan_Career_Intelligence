@@ -9,8 +9,9 @@ if str(CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(CURRENT_DIR))
 
 from app.core.config import settings
-from app.core.database import engine, SessionLocal, Base
+from app.core.database import engine, SessionLocal, Base, init_db
 from app.models.entities import Company, JobListing
+from app.services.jd_parser import parse_job_sections
 
 
 def find_job_listings_file() -> Path:
@@ -69,6 +70,9 @@ def parse_job_listings_md(file_path: Path):
         else:
             location = "Mumbai"
 
+        # Parse structured sections from description
+        sections = parse_job_sections(desc) if desc else {}
+
         jobs_data.append(
             {
                 "num": num,
@@ -79,6 +83,10 @@ def parse_job_listings_md(file_path: Path):
                 "location": location,
                 "context_note": context_note,
                 "original_description": desc,
+                "summary": sections.get("summary"),
+                "responsibilities": sections.get("responsibilities"),
+                "qualifications": sections.get("qualifications"),
+                "preferred_qualifications": sections.get("preferred_qualifications"),
                 "capture_date": "2026-11-17",
             }
         )
@@ -94,8 +102,8 @@ def seed_baseline_jobs(db: Session = None) -> int:
         close_db = True
 
     try:
-        # Ensure database tables exist
-        Base.metadata.create_all(bind=engine)
+        # Ensure database tables and columns exist
+        init_db()
 
         # Ensure default company exists
         company = (
@@ -132,6 +140,10 @@ def seed_baseline_jobs(db: Session = None) -> int:
                 existing.location = item["location"]
                 existing.context_note = item["context_note"]
                 existing.original_description = item["original_description"]
+                existing.summary = item["summary"]
+                existing.responsibilities = item["responsibilities"]
+                existing.qualifications = item["qualifications"]
+                existing.preferred_qualifications = item["preferred_qualifications"]
                 existing.capture_date = item["capture_date"]
             else:
                 # Insert new record
@@ -144,6 +156,10 @@ def seed_baseline_jobs(db: Session = None) -> int:
                     location=item["location"],
                     context_note=item["context_note"],
                     original_description=item["original_description"],
+                    summary=item["summary"],
+                    responsibilities=item["responsibilities"],
+                    qualifications=item["qualifications"],
+                    preferred_qualifications=item["preferred_qualifications"],
                     capture_date=item["capture_date"],
                 )
                 db.add(new_job)
