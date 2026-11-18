@@ -1,0 +1,58 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Local databases and runtime data (NFR-05)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+data/*.db-journal
+data/*.sqlite-shm
+data/*.sqlite-wal
+
+# Local private file uploads
+uploads/*
+!uploads/.gitkeep
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Frontend dependencies and production builds
+frontend/node_modules/
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.turbo/
+*.local
+
+# Editor and IDE metadata
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+Thumbs.db
