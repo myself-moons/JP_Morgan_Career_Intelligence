@@ -50,7 +50,7 @@ JCI is a local-first, single-user career intelligence application focused initia
 
 ### 2.1 Product perspective
 
-JCI is a standalone local application in Phase 1 (MVP). The React frontend communicates with Python service modules through a local FastAPI backend. A local SQL relational database (SQLite) stores all structured project data. Uploaded documents are processed locally. Optional AI assistance may be added behind a replaceable adapter, but core workflows must remain fully functional without it. Cloud hosting and Firebase services are reserved for Phase 2.
+JCI is a standalone local application in Phase 1 (MVP) designed with a **Hybrid Intelligence Architecture** optimized for resource-constrained client machines (e.g., 4.00 GB RAM, dual-core CPUs). The React frontend communicates with Python service modules through a local FastAPI backend. A local SQL relational database (SQLite) stores all structured project data. Uploaded documents are processed locally with lightweight deterministic parsers. To prevent memory exhaustion while offering state-of-the-art NLP, heavy semantic analysis (skill disambiguation and qualitative resume critique) is routed through a zero-RAM external cloud LLM adapter (Google Gemini 1.5 Flash / Groq via free-tier API). Core workflows remain 100% functional offline without an external API key. Cloud hosting and Firebase services are reserved for Phase 2.
 
 ### 2.2 Product functions
 
@@ -176,6 +176,8 @@ The database design must prevent orphan records and avoid duplicating the same c
 | NFR-08 | Performance: normal single-user operations on the initial dataset (10 analysable JDs) should execute in under 2 seconds locally. | Automated benchmark timing with the baseline dataset. |
 | NFR-09 | Recoverability: provide a documented way to back up and restore the SQLite database. | Perform a backup/restore test script. |
 | NFR-10 | Portability: dependencies and setup steps should be documented and reproducible across Windows and Linux environments. | Create a clean virtual environment from README instructions. |
+| NFR-11 | Low Memory Footprint: local backend memory usage must remain under 300 MB RAM to ensure stable execution on 4 GB RAM machines without swap thrashing. | Benchmark memory consumption of FastAPI process during peak local tasks. |
+| NFR-12 | Graceful AI Degradation: system must execute all core ingestion, extraction, and comparison workflows offline using rules and dictionaries when no external AI API key is configured. | Execute test suite without API keys and verify all deterministic endpoints succeed. |
 
 ## 9. Acceptance criteria for the MVP
 

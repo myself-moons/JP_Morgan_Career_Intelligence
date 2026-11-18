@@ -6,18 +6,18 @@ This document serves as the master implementation reference for the **JPMorgan C
 
 ---
 
-## Architectural Strategy: Two-Phase Delivery
+## Architectural Strategy: Two-Phase Delivery & Hybrid Intelligence
 
 ```mermaid
 flowchart TD
-    subgraph Phase1["Phase 1: Local-First MVP (Milestones M0 to M7) - 100% Offline & Single-User"]
-        M0["M0: Foundation & Setup<br>(Vite/React + FastAPI + Virtualenv)"] --> M1["M1: Database & Ingestion<br>(SQLite + Job Library + 11 Baseline Jobs)"]
-        M1 --> M2["M2: JD Processing & Extraction<br>(Text Cleaning + Regex/Rule Extractors)"]
-        M2 --> M3["M3: Taxonomy & Review Workflow<br>(Canonical Skills + Alias Map + Human Review)"]
+    subgraph Phase1["Phase 1: Local-First MVP (Milestones M0 to M7) - Hybrid Intelligence & Low-Memory Footprint"]
+        M0["M0: Foundation & Setup<br>(Vite/React + FastAPI + Virtualenv)"] --> M1["M1: Database & Ingestion<br>(SQLite + Job Library + Auto-Extraction + JB-N Code)"]
+        M1 --> M2["M2: JD Processing & Extraction<br>(Text Normalization + Deterministic Rules & Sections)"]
+        M2 --> M3["M3: Taxonomy, Alias Engine & AI Disambiguation<br>(Canonical Dictionary + Free-Tier LLM Semantic Mapper)"]
         M3 --> M4["M4: Comparative Analytics<br>(Coverage % across N=10 + Role Families A, B, C)"]
-        M4 --> M5["M5: Profile Matcher & Resume Coverage<br>(CardLyze Seed + Resume vs JD + Claimed Audits)"]
+        M4 --> M5["M5: Profile Matcher, Resume Coverage & AI Critique<br>(CardLyze Seed + Exact Keyword Line Matching + LLM Feedback)"]
         M5 --> M6["M6: Learning Intelligence<br>(Resource Catalogue + Gap Mapping + Progress Tracker)"]
-        M6 --> M7["M7: Verification & Local Delivery<br>(Pytest TC-01..TC-21 + Exports + Backup Utility)"]
+        M6 --> M7["M7: Verification & Local Delivery<br>(Pytest TC-01..TC-23 + Exports + Backup Utility)"]
     end
 
     subgraph Phase2["Phase 2: Cloud Extension (Post-M7) - Distributed Architecture"]
@@ -27,6 +27,13 @@ flowchart TD
         P2_3 --> P2_4["Phase 2.4: Remote Authentication & Security Controls"]
     end
 ```
+
+### Low-Spec Hardware Optimization & Zero-RAM Cloud Inference Strategy
+To ensure the application executes smoothly on resource-constrained development machines (such as 4.00 GB RAM with dual-core CPUs, e.g., Intel Core i5-6200U) without memory exhaustion (`MemoryError`) or disk thrashing:
+1. **Lightweight Local Baseline (<150 MB RAM):** Text normalization, section parsing, exact keyword matching, and SQLite persistence run entirely in-process using Python standard libraries, PyMuPDF, and SQLAlchemy, maintaining an ultra-low memory footprint.
+2. **Zero-RAM Semantic Cloud Intelligence (Option 2):** Heavy natural language understanding, ambiguous skill disambiguation, and qualitative resume feedback bypass local GPU/CPU hardware completely by routing through a free-tier external LLM adapter (e.g. Google Gemini 1.5 Flash or Groq Llama 3).
+3. **Graceful Offline Degradation:** If no API key is provided or the device is offline, all workflows automatically fall back to the deterministic dictionary and alias matcher with zero feature disruption.
+4. **Kaggle / Colab GPU Batch Training Pipeline (Option 3):** Exploratory data analysis, large-scale taxonomy clustering, and notebook experiments run in remote GPU cloud environments (Google Colab / Kaggle), exporting lightweight structured JSON artifacts back to the local SQLite database.
 
 ---
 
@@ -194,16 +201,24 @@ Establish the controlled canonical skill taxonomy, alias resolution engine, and 
    - Normalizes incoming skill phrases against `SkillAlias`.
    - Resolves known aliases to canonical skills (FR-13, BR-04, TC-09).
    - Unmapped or ambiguous terms are flagged as `Unresolved Candidate` for human review rather than guessing (TC-10).
-4. **Human Review Workflow API (`backend/app/api/review.py`):**
+4. **AI Semantic Disambiguation Adapter (`backend/app/services/llm_service.py` - Option 2):**
+   - Integrates a lightweight cloud LLM client (Google Gemini 1.5 Flash / Groq Llama 3 via free tier API).
+   - When an unmapped or complex skill phrase is flagged (e.g. *"authoring relational database queries"* or *"automated data blending workflows"*), user can click **"AI Suggest Mapping"** (FR-42).
+   - The LLM analyzes the phrase in context, returns candidate canonical skills from the pre-seeded taxonomy with a confidence score and rationale, and recommends an alias addition without consuming local RAM.
+   - Retains human-in-the-loop review: user confirms before the alias is written to SQLite.
+5. **Human Review Workflow API (`backend/app/api/review.py`):**
    - `PUT /api/jobs/{id}/skills/{job_skill_id}`: Accept, edit, reclassify, or reject extracted skill links (FR-14, TC-13).
    - `POST /api/taxonomy/aliases`: Allow user to map an unresolved phrase to an existing canonical skill.
-5. **Frontend Review Component:**
+   - `POST /api/taxonomy/ai-disambiguate`: Execute semantic LLM suggestion for an unresolved skill phrase.
+6. **Frontend Review Component:**
    - Interactive badge list grouped by category.
    - User can click a badge to inspect exact evidence snippet, change requirement type (Required/Preferred), or delete spurious detections.
+   - "AI Suggest" button next to unresolved candidate terms with live rationale popover.
 
 #### 4. Verification Checkpoint
 - Mapping verified aliases resolves synonyms into a single canonical skill count (TC-09).
 - Ambiguous terms are presented for user review (TC-10).
+- AI disambiguation returns candidate mappings with confidence and explanation (TC-22); system functions cleanly offline when API key is absent.
 - User edits persist across application restarts (TC-13, TC-17).
 
 ---
@@ -293,11 +308,22 @@ Implement the evidence-based profile matcher with verified contribution attribut
    - Resume tab: Upload/paste resume, view parse check alerts, select target JD from dropdown.
    - Coverage view: Side-by-side snippet comparison showing JD requirement line vs. resume matching line, with "Claimed but unsupported" status pills.
 
+#### Sub-phase 1.5C: Semantic Resume Intelligence & AI Critique (Option 2)
+8. **AI Semantic Resume Critique Engine (`backend/app/services/llm_service.py` - Option 2):**
+   - Connects to Google Gemini 1.5 Flash / Groq Llama 3 via lightweight external HTTPS request (zero local RAM overhead, completely free tier).
+   - Generates qualitative, expert-level resume critique for the target JPMorgan Chase role (FR-43):
+     - **Implicit Skill Detection:** Identifies capabilities demonstrated in experience bullets that did not contain verbatim keywords.
+     - **Bullet Strength Analysis:** Evaluates action verbs, impact metrics, and clarity for financial technology roles.
+     - **Authentic Rewording Recommendations:** Suggests how to rephrase CardLyze and project experience to address verified skill gaps truthfully without inflating claims (respecting rule BR-13).
+   - `POST /api/profile/resume/ai-critique`: Returns structured critique, bullet improvements, and targeted rephrasings.
+   - Frontend UI: Expandable **"AI Resume Intelligence & Tailoring"** panel with one-click copyable suggested bullet rewrites.
+
 #### 4. Verification Checkpoint
 - CardLyze project loads with verified attribution (TC-15).
 - Reference Data Analyst role flags postgraduate finance qualification strictly as an education gap (TC-21).
 - Resume coverage displays matching lines for JD skills with zero composite score (TC-19).
 - Resume skills without profile deliverables are flagged as claimed but unsupported (TC-20).
+- AI resume critique provides actionable bullet feedback and rewording tips without breaking local-first offline operation when unconfigured (TC-23).
 
 ---
 

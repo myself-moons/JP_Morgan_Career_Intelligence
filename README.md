@@ -9,6 +9,7 @@ JPMorgan Career Intelligence (JCI) is a personal, local-first career research an
 ## Key Highlights & Architectural Principles
 
 - **Local-First Architecture (Phase 1 MVP):** Built as a fast, 100% local-first application using a modern **React web frontend**, a **Python FastAPI backend**, and a **local SQLite database** (`jci_local.db`). Requires zero paid cloud infrastructure or external AI API keys for core operations.
+- **Hybrid Intelligence for Low-Spec Hardware:** Specifically optimized to run smoothly on low-spec client hardware (e.g. 4.00 GB RAM dual-core CPUs) without memory exhaustion or disk swap thrashing. Local storage and deterministic parsers run under 150 MB RAM, while heavy semantic skill disambiguation (M3) and qualitative resume critique (M5) route through a zero-RAM external cloud LLM adapter (Google Gemini / Groq free tier) with graceful offline fallback.
 - **Traceable Extraction:** Every extracted requirement and skill is permanently linked to an immutable source evidence snippet from the original job description.
 - **Explainable Multi-Dimensional Matching:** Separates technical alignment, functional domain alignment, experience seniority, and formal education/licensing prerequisites. Formal degree requirements are reported strictly as **Education / Eligibility Gaps**, not as learnable skill gaps.
 - **Honest Evidence Attribution (FR-19):** Distinguishes independent implementation, AI-assisted implementation, supervised work, and theoretical course completions. Validated against the CardLyze project profile baseline.
@@ -62,8 +63,8 @@ Complete project specifications are maintained in the [`.docs/`](file:///c:/User
 - **M0: Foundation:** Project structure, Python environment, React setup, FastAPI stub, dependencies, and v1.2 docs.
 - **M1: Database & Ingestion:** SQLite schema, job library, paste & PDF/DOCX ingestion, preserving immutable original text.
 - **M2: JD Processing:** Text cleaning, deterministic extraction of experience, qualifications, responsibilities, and requirements.
-- **M3: Taxonomy & Review:** Canonical skills, aliases, categories, source evidence snippets, and human correction workflow.
+- **M3: Taxonomy & Review:** Canonical skills, aliases, categories, source evidence snippets, human review workflow, and AI-assisted semantic disambiguation (FR-42).
 - **M4: Comparative Analytics:** Distinct-job skill frequency across the 10 analysable JDs, required vs. preferred split, and role family filters.
-- **M5: Profile Matcher & CardLyze Seed:** Seed profile with CardLyze project (recording independent vs. AI-assisted attribution per FR-19), evaluate multi-dimensional fit, and verify education vs. skill gap isolation.
+- **M5: Profile Matcher, Resume Coverage & AI Critique:** Seed profile with CardLyze project (recording independent vs. AI-assisted attribution per FR-19), evaluate multi-dimensional fit, line-by-line resume keyword coverage (FR-38), and AI semantic resume critique & rewording (FR-43).
 - **M6: Learning Intelligence:** Vetted resource catalogue, gap-to-course mapping, and progress tracking.
 - **M7: Validation & Delivery:** Full automated test suite (Pytest), CSV/Excel exports, SQLite backup/restore procedures, and privacy review.
