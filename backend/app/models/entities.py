@@ -1,0 +1,60 @@
+from datetime import datetime, timezone
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import relationship
+from app.core.database import Base
+
+
+def utcnow():
+    return datetime.now(timezone.utc)
+
+
+class Company(Base):
+    __tablename__ = "companies"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(255), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    # Relationships
+    jobs = relationship("JobListing", back_populates="company", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Company(id={self.id}, name='{self.name}')>"
+
+
+class JobListing(Base):
+    __tablename__ = "job_listings"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255), nullable=False, index=True)
+    external_job_id = Column(String(100), nullable=True, index=True)
+    location = Column(String(255), nullable=False, default="Goregaon, Mumbai")
+    source_url = Column(Text, nullable=True)
+    capture_date = Column(String(50), nullable=False, default="2026-11-17")
+    role_family = Column(String(150), nullable=False, index=True)
+    status = Column(String(50), nullable=False, default="Available", index=True)
+    original_description = Column(Text, nullable=True)
+    cleaned_description = Column(Text, nullable=True)
+    context_note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    # Unique constraint per company and external requisition id (when present)
+    __table_args__ = (
+        UniqueConstraint("company_id", "external_job_id", name="uq_company_job_id"),
+    )
+
+    # Relationships
+    company = relationship("Company", back_populates="jobs")
+
+    def __repr__(self):
+        return f"<JobListing(id={self.id}, title='{self.title}', family='{self.role_family}', status='{self.status}')>"
