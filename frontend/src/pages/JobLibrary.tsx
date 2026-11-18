@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Job, JobListResponse, RoleFamily, JobStatus } from '../types';
+import { Job, JobListResponse } from '../types';
 import {
   fetchJobs,
   createJob,
@@ -10,10 +10,8 @@ import {
 import {
   Briefcase,
   Plus,
-  Filter,
   Search,
   Upload,
-  FileText,
   FileCheck,
   AlertCircle,
   Eye,

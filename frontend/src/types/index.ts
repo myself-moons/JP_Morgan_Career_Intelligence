@@ -38,10 +38,10 @@ export interface Job {
 
 export interface JobListResponse {
   jobs: Job[];
-  total_count: int;
-  analysable_count: int;
-  role_family_counts: Record<string, int>;
-  status_counts: Record<string, int>;
+  total_count: number;
+  analysable_count: number;
+  role_family_counts: Record<string, number>;
+  status_counts: Record<string, number>;
 }
 
 export interface UploadResponse {

@@ -8,7 +8,6 @@ import {
   Cpu,
   Layers,
   ArrowRight,
-  Database,
   BarChart3,
 } from 'lucide-react';
 
@@ -90,7 +89,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ health, onNavigate }) => {
             </div>
           </div>
           <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-slate-900">100% Local</span>
+            <span className="text-2xl font-bold text-slate-900">
+              {health ? health.database.toUpperCase() : 'SQLite'}
+            </span>
+            <span className="text-xs text-slate-500">
+              {health ? `v${health.version}` : 'Local'}
+            </span>
           </div>
           <div className="mt-2 text-xs text-emerald-600 font-medium">
             FastAPI + SQLite (Zero Cloud Latency)

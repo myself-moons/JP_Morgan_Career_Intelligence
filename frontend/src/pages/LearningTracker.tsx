@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, BookOpen, CheckSquare } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 
 export const LearningTracker: React.FC = () => {
   return (
