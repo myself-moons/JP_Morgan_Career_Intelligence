@@ -8,10 +8,11 @@ if str(CURRENT_DIR) not in sys.path:
 
 from app.core.config import settings
 
+
 def main():
     db_file = settings.DATABASE_PATH
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     # If the database file doesn't exist yet, create an empty one so sqlite-web can open it
     if not db_file.exists():
         import sqlite3
@@ -27,10 +28,12 @@ def main():
     print(" Press Ctrl+C to stop the console server.")
     print("=" * 65)
 
+    # Note: Upstream sqlite-web package has an empty __init__.py, so module invocation
+    # must target sqlite_web.sqlite_web directly rather than sqlite_web.
     cmd = [
         sys.executable,
         "-m",
-        "sqlite_web",
+        "sqlite_web.sqlite_web",
         str(db_file),
         "--host",
         settings.HOST,
@@ -42,6 +45,7 @@ def main():
         subprocess.run(cmd)
     except KeyboardInterrupt:
         print("\nDatabase console stopped.")
+
 
 if __name__ == "__main__":
     main()
