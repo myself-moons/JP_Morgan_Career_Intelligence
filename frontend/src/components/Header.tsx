@@ -1,7 +1,7 @@
 import React from 'react';
 import { HealthStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
-import { Database, ShieldCheck, Compass } from 'lucide-react';
+import { Database, Compass } from 'lucide-react';
 
 interface HeaderProps {
   health: HealthStatus | null;

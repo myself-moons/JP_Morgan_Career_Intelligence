@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileSearch, Sparkles, Filter, CheckCircle2 } from 'lucide-react';
+import { FileSearch } from 'lucide-react';
 
 export const SkillAnalysis: React.FC = () => {
   return (

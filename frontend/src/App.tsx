@@ -8,7 +8,7 @@ import { ProfileMatcher } from './pages/ProfileMatcher';
 import { LearningTracker } from './pages/LearningTracker';
 import { ActiveTab, HealthStatus } from './types';
 import { checkHealth } from './services/api';
-import { Database, ExternalLink, Terminal, CheckCircle2 } from 'lucide-react';
+import { Database, ExternalLink } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');

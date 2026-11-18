@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserCheck, FileText, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { UserCheck } from 'lucide-react';
 
 export const ProfileMatcher: React.FC = () => {
   return (
