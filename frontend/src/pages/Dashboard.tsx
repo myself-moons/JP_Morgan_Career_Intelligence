@@ -22,7 +22,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ health, onNavigate }) => {
   useEffect(() => {
     fetchJobs()
       .then((data) => setJobStats(data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   return (
