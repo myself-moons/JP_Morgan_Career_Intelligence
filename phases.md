@@ -284,32 +284,33 @@ Implement the evidence-based profile matcher with verified contribution attribut
      - Technical alignment, functional alignment, domain alignment, experience alignment, education alignment, and evidence strength (FR-20, FR-21).
    - **Education vs. Skill Gap Isolation (BR-15, TC-21):** Formal education prerequisites (specifically the Reference Data Analyst role's postgraduate finance degree) are evaluated strictly under the Education dimension and never scored as a technical skill gap.
 
-#### Sub-phase 1.5B: Resume Keyword Coverage (New Feature)
-4. **Resume Ingestion & Parse Check (FR-37, FR-39):**
-   - Data entity: `ResumeDocument` (`id`, `user_id`, `source_type`, `raw_text`, `parse_status`, `capture_date`, `file_path`).
-   - Implement `POST /api/profile/resume`: accepts pasted text or PDF/DOCX file upload.
-   - Text parser runs parse check heuristics (FR-39):
-     - Check for empty extraction buffer.
-     - Check for scrambled multi-column text (unusually short line fragments, high whitespace-to-char ratio).
-     - Returns parse warning alert if extraction looks flawed.
-   - Stores raw resume text in SQLite; saves binary to local `uploads/` folder if file retention enabled.
-5. **Resume vs. JD Keyword Coverage Engine (FR-38, BR-13, BR-14):**
+#### Sub-phase 1.5B: Multi-Resume Repository, In-App LaTeX Editor & Keyword Coverage (FR-37 to FR-40)
+4. **Multi-Resume Data Model & Auto-Discovery (`backend/app/models/`):**
+   - Data entity: `ResumeDocument` (`id`, `user_id`, `name`, `pdf_path`, `latex_path`, `raw_text`, `latex_source`, `is_active`, `parse_status`, `capture_date`).
+   - Automatically detects and seeds existing resumes from `resumes/` directory (`Manthan_Fintech_Resume` and `Pretty_Resume`) on initial setup.
+   - Supports uploading and managing multiple targeted resumes (e.g. Quant/Risk vs. Data Engineering vs. ML/AI).
+   - In-browser PDF stream preview endpoint (`GET /api/resumes/{id}/pdf`) for instant side-by-side visual inspection.
+5. **In-Platform LaTeX Editor & Role-Specific Tailoring:**
+   - Syntax-highlighted in-app LaTeX editor allowing real-time edits without local TeX Live/compiler bloat (preserving low memory footprint).
+   - Instant export of customized `.tex` files or direct copy into Overleaf.
+   - Integration with AI Personalization: suggest targeted bullet point enhancements directly aligned with a specific JPMC requisition.
+6. **Resume vs. JD Keyword Coverage Engine (FR-38, BR-13, BR-14):**
    - Implement `GET /api/profile/resume/coverage/{job_id}`:
-     - Scans resume text against all canonical skills and aliases required or preferred by the selected JD (BR-14).
+     - Scans active resume text against all canonical skills and aliases required or preferred by the selected JD (BR-14).
      - Finds the exact matching line/bullet from the resume and the exact matching line from the JD.
      - Generates line-by-line coverage comparison without any composite percentage score (FR-38).
-6. **Claimed but Unsupported Evidence Audit (FR-40, BR-13):**
+7. **Claimed but Unsupported Evidence Audit (FR-40, BR-13):**
    - Cross-references all skills detected in the resume against `ProfileEvidence`.
    - If a skill is mentioned in the resume but has no supporting project evidence in the profile, flag as:
      `Claimed in resume, unsupported by profile evidence` (TC-20).
    - Enforce rule BR-13: resume keyword mention does not automatically upgrade evidence status to Demonstrated.
-7. **Frontend Profile & Resume Workspace (`frontend/src/pages/ProfileMatcher.tsx`):**
+8. **Frontend Profile & Resume Workspace (`frontend/src/pages/ProfileMatcher.tsx`):**
    - Profile tab: View/edit education, work history, projects (CardLyze), and evidence claims with contribution badges.
-   - Resume tab: Upload/paste resume, view parse check alerts, select target JD from dropdown.
+   - Resume tab: Multi-resume switcher, PDF visual previewer, in-app LaTeX editor, and parse check alerts.
    - Coverage view: Side-by-side snippet comparison showing JD requirement line vs. resume matching line, with "Claimed but unsupported" status pills.
 
 #### Sub-phase 1.5C: Semantic Resume Intelligence & AI Critique (Option 2)
-8. **AI Semantic Resume Critique Engine (`backend/app/services/llm_service.py` - Option 2):**
+9. **AI Semantic Resume Critique Engine (`backend/app/services/llm_service.py` - Option 2):**
    - Connects to Google Gemini 1.5 Flash / Groq Llama 3 via lightweight external HTTPS request (zero local RAM overhead, completely free tier).
    - Generates qualitative, expert-level resume critique for the target JPMorgan Chase role (FR-43):
      - **Implicit Skill Detection:** Identifies capabilities demonstrated in experience bullets that did not contain verbatim keywords.
