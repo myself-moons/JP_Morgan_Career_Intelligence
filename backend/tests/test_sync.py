@@ -76,12 +76,21 @@ MOCK_ORACLE_LIST_DATA = {
 }
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def clean_mock_jobs():
     db = SessionLocal()
     try:
-        yield
-        # Teardown: Remove test mock jobs
+        db.query(JobListing).filter(
+            JobListing.source_job_id.in_(["999001", "999002"])
+        ).delete(synchronize_session=False)
+        db.commit()
+    finally:
+        db.close()
+
+    yield
+
+    db = SessionLocal()
+    try:
         db.query(JobListing).filter(
             JobListing.source_job_id.in_(["999001", "999002"])
         ).delete(synchronize_session=False)
@@ -176,15 +185,27 @@ def test_sync_jpmc_jobs_offline():
         db.close()
 
 
+from unittest.mock import patch
+
+
 @pytest.mark.asyncio
 async def test_sync_api_dry_run():
-    """Verify POST /api/jobs/sync responds correctly in dry_run mode."""
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
-    ) as client:
-        response = await client.post("/api/jobs/sync", json={"limit": 10, "dry_run": True})
-        assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-        assert "added" in data
-        assert "updated" in data
+    """Verify POST /api/jobs/sync responds correctly in dry_run mode without external network calls."""
+    with patch("app.api.jobs.sync_jpmc_jobs") as mock_sync:
+        mock_sync.return_value = {
+            "total_found": 2,
+            "added": 2,
+            "updated": 0,
+            "unchanged": 0,
+            "stale": 0,
+            "jobs": [],
+            "message": "Dry run preview: found 2 jobs in Mumbai/Goregaon area.",
+        }
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+        ) as client:
+            response = await client.post("/api/jobs/sync", json={"limit": 10, "dry_run": True})
+            assert response.status_code == 200
+            data = response.json()
+            assert "message" in data
+            assert data["added"] == 2

@@ -261,11 +261,30 @@ export async function uploadResumeFile(name: string, file: File): Promise<Resume
   return response.json();
 }
 
-export async function evaluateResumeAgainstJob(
+export async function fetchCachedJobMatch(
   resumeId: number,
   jobId: number
+): Promise<ExplainableMatch | null> {
+  try {
+    const response = await fetch(`${API_BASE}/resumes/${resumeId}/match-job/${jobId}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return null;
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function evaluateResumeAgainstJob(
+  resumeId: number,
+  jobId: number,
+  forceRefresh: boolean = false
 ): Promise<ExplainableMatch> {
-  const response = await fetch(`${API_BASE}/resumes/${resumeId}/match-job/${jobId}`, {
+  const url = `${API_BASE}/resumes/${resumeId}/match-job/${jobId}${
+    forceRefresh ? '?force_refresh=true' : ''
+  }`;
+  const response = await fetch(url, {
     method: 'POST',
     headers: { Accept: 'application/json' },
   });

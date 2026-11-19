@@ -153,6 +153,7 @@ class ExplainableMatchResponse(BaseModel):
     critical_missing_skills: List[str] = Field(default_factory=list)
     actionable_latex_recommendations: List[str] = Field(default_factory=list)
     is_llm_powered: bool = False
+    is_cached: bool = False
 
 
 class TopJobMatch(BaseModel):

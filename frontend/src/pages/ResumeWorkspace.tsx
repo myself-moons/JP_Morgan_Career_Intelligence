@@ -28,6 +28,7 @@ import {
   uploadResumeFile,
   fetchJobs,
   evaluateResumeAgainstJob,
+  fetchCachedJobMatch,
 } from '../services/api';
 
 export const ResumeWorkspace: React.FC = () => {
@@ -48,6 +49,7 @@ export const ResumeWorkspace: React.FC = () => {
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [explainableMatch, setExplainableMatch] = useState<ExplainableMatch | null>(null);
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
+  const [isCheckingCache, setIsCheckingCache] = useState<boolean>(false);
   const [evalError, setEvalError] = useState<string | null>(null);
   const [copiedRecIdx, setCopiedRecIdx] = useState<number | null>(null);
 
@@ -57,13 +59,12 @@ export const ResumeWorkspace: React.FC = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
-  const runEvaluation = async (jobId: number, resumeId?: number) => {
-    const resId = resumeId || selectedResumeId;
-    if (!resId || !jobId) return;
+  const runEvaluation = async (jobId: number, forceRefresh: boolean = false) => {
+    if (!selectedResumeId || !jobId) return;
     try {
       setIsEvaluating(true);
       setEvalError(null);
-      const evalData = await evaluateResumeAgainstJob(resId, jobId);
+      const evalData = await evaluateResumeAgainstJob(selectedResumeId, jobId, forceRefresh);
       setExplainableMatch(evalData);
     } catch (err: any) {
       setEvalError(err?.message || 'Failed to evaluate job match');
@@ -72,11 +73,22 @@ export const ResumeWorkspace: React.FC = () => {
     }
   };
 
-  const handleJobSelect = (jobId: number | null) => {
+  const handleJobSelect = async (jobId: number | null) => {
     setSelectedJobId(jobId);
     setExplainableMatch(null);
-    if (jobId) {
-      runEvaluation(jobId);
+    setEvalError(null);
+    if (jobId && selectedResumeId) {
+      try {
+        setIsCheckingCache(true);
+        const cached = await fetchCachedJobMatch(selectedResumeId, jobId);
+        if (cached) {
+          setExplainableMatch(cached);
+        }
+      } catch {
+        // No cache found, user can trigger evaluation manually
+      } finally {
+        setIsCheckingCache(false);
+      }
     }
   };
 
@@ -115,7 +127,7 @@ export const ResumeWorkspace: React.FC = () => {
 
   const selectedResume = resumes.find(r => r.id === selectedResumeId) || null;
 
-  const handleSelectResume = (resumeId: number) => {
+  const handleSelectResume = async (resumeId: number) => {
     if (hasUnsavedChanges) {
       const confirmDiscard = window.confirm(
         'You have unsaved LaTeX changes. Switch resume anyway?'
@@ -128,6 +140,23 @@ export const ResumeWorkspace: React.FC = () => {
       setLatexCode(target.latex_source || '');
       setHasUnsavedChanges(false);
       setSaveSuccess(false);
+    }
+
+    // Check local cache for newly selected resume with existing selected job
+    setExplainableMatch(null);
+    setEvalError(null);
+    if (selectedJobId) {
+      try {
+        setIsCheckingCache(true);
+        const cached = await fetchCachedJobMatch(resumeId, selectedJobId);
+        if (cached) {
+          setExplainableMatch(cached);
+        }
+      } catch {
+        // No cached evaluation
+      } finally {
+        setIsCheckingCache(false);
+      }
     }
   };
 
@@ -268,25 +297,22 @@ export const ResumeWorkspace: React.FC = () => {
           <div className="bg-slate-950 p-1 rounded-lg border border-slate-800 flex items-center">
             <button
               onClick={() => setViewMode('split')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition ${
-                viewMode === 'split' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === 'split' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
             >
               <Columns size={14} /> Split
             </button>
             <button
               onClick={() => setViewMode('pdf')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition ${
-                viewMode === 'pdf' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === 'pdf' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
             >
               <Eye size={14} /> PDF
             </button>
             <button
               onClick={() => setViewMode('latex')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition ${
-                viewMode === 'latex' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === 'latex' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
             >
               <Code2 size={14} /> LaTeX
             </button>
@@ -321,9 +347,8 @@ export const ResumeWorkspace: React.FC = () => {
           {/* PDF Preview Frame */}
           {(viewMode === 'split' || viewMode === 'pdf') && (
             <div
-              className={`bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col ${
-                viewMode === 'pdf' ? 'lg:col-span-2' : ''
-              }`}
+              className={`bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col ${viewMode === 'pdf' ? 'lg:col-span-2' : ''
+                }`}
               style={{ height: '740px' }}
             >
               <div className="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
@@ -363,9 +388,8 @@ export const ResumeWorkspace: React.FC = () => {
           {/* LaTeX Editor Pane */}
           {(viewMode === 'split' || viewMode === 'latex') && (
             <div
-              className={`bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col ${
-                viewMode === 'latex' ? 'lg:col-span-2' : ''
-              }`}
+              className={`bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col ${viewMode === 'latex' ? 'lg:col-span-2' : ''
+                }`}
               style={{ height: '740px' }}
             >
               <div className="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs">
@@ -387,11 +411,10 @@ export const ResumeWorkspace: React.FC = () => {
                   <button
                     onClick={handleSaveLatex}
                     disabled={isSaving || !hasUnsavedChanges}
-                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-lg transition ${
-                      hasUnsavedChanges
+                    className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-lg transition ${hasUnsavedChanges
                         ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <Save size={13} />
                     <span>{isSaving ? 'Saving...' : 'Save Source'}</span>
@@ -469,14 +492,17 @@ export const ResumeWorkspace: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => selectedJobId && runEvaluation(selectedJobId)}
-                    disabled={isEvaluating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-semibold shadow-md transition disabled:opacity-60"
-                  >
-                    <Sparkles size={14} className={isEvaluating ? 'animate-spin' : ''} />
-                    <span>{isEvaluating ? 'Evaluating with AI...' : 'Re-Analyze Match'}</span>
-                  </button>
+                  {explainableMatch && (
+                    <button
+                      onClick={() => selectedJobId && runEvaluation(selectedJobId, true)}
+                      disabled={isEvaluating}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-semibold shadow-md transition disabled:opacity-60"
+                      title="Force a fresh evaluation with Gemini AI"
+                    >
+                      <Sparkles size={14} className={isEvaluating ? 'animate-spin' : ''} />
+                      <span>{isEvaluating ? 'Evaluating with AI...' : 'Re-Analyze with Gemini AI'}</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -484,6 +510,13 @@ export const ResumeWorkspace: React.FC = () => {
                 <div className="p-3 bg-rose-950/40 border border-rose-800 text-rose-300 rounded-lg text-xs flex items-center gap-2">
                   <AlertCircle size={15} />
                   <span>{evalError}</span>
+                </div>
+              )}
+
+              {isCheckingCache && (
+                <div className="p-6 text-center bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                  <RefreshCw size={20} className="mx-auto text-cyan-400 animate-spin" />
+                  <p className="text-xs text-slate-400">Checking local cache for existing evaluation (0 API calls)...</p>
                 </div>
               )}
 
@@ -499,31 +532,56 @@ export const ResumeWorkspace: React.FC = () => {
                 </div>
               )}
 
+              {!explainableMatch && !isEvaluating && !isCheckingCache && (
+                <div className="p-8 text-center bg-slate-950/80 border border-dashed border-slate-800 rounded-xl space-y-3">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-cyan-950/50 border border-cyan-800/60 flex items-center justify-center text-cyan-400">
+                    <Sparkles size={22} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">No AI Assessment Generated Yet</h4>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
+                      To protect your Google AI Studio free tier quota, evaluations are only run on-demand and cached locally in SQLite.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => selectedJobId && runEvaluation(selectedJobId, false)}
+                    disabled={isEvaluating}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold shadow-lg transition"
+                  >
+                    <Sparkles size={14} />
+                    <span>Run Explainable AI Assessment</span>
+                  </button>
+                </div>
+              )}
+
               {explainableMatch && !isEvaluating && (
                 <div className="space-y-4">
                   {/* Score & Verdict Banner */}
                   <div className="p-4 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                           Hiring Bar Verdict:
                         </span>
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                            explainableMatch.overall_score >= 80
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${explainableMatch.overall_score >= 80
                               ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                               : explainableMatch.overall_score >= 60
-                              ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
-                              : explainableMatch.overall_score >= 40
-                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                              : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
-                          }`}
+                                ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                                : explainableMatch.overall_score >= 40
+                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                  : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                            }`}
                         >
                           {explainableMatch.readiness_verdict}
                         </span>
-                        {explainableMatch.is_llm_powered ? (
-                          <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 flex items-center gap-1">
-                            <Sparkles size={11} /> Gemini Flash
+                        {explainableMatch.is_cached ? (
+                          <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20 flex items-center gap-1 font-semibold">
+                            <CheckCircle2 size={11} /> Saved in SQLite Cache (0 API Calls)
+                          </span>
+                        ) : explainableMatch.is_llm_powered ? (
+                          <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 flex items-center gap-1 font-semibold">
+                            <Sparkles size={11} /> Fresh Gemini Evaluation (Cached)
                           </span>
                         ) : (
                           <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700">
@@ -545,13 +603,12 @@ export const ResumeWorkspace: React.FC = () => {
                       </div>
                       <div className="w-20 bg-slate-800 rounded-full h-2.5 overflow-hidden">
                         <div
-                          className={`h-2.5 rounded-full transition-all duration-500 ${
-                            explainableMatch.overall_score >= 80
+                          className={`h-2.5 rounded-full transition-all duration-500 ${explainableMatch.overall_score >= 80
                               ? 'bg-emerald-500'
                               : explainableMatch.overall_score >= 60
-                              ? 'bg-cyan-500'
-                              : 'bg-amber-500'
-                          }`}
+                                ? 'bg-cyan-500'
+                                : 'bg-amber-500'
+                            }`}
                           style={{ width: `${explainableMatch.overall_score}%` }}
                         />
                       </div>
@@ -565,8 +622,8 @@ export const ResumeWorkspace: React.FC = () => {
                         key === 'technical_skills'
                           ? 'Technical & Stack Alignment'
                           : key === 'domain_knowledge'
-                          ? 'Banking & Governance Domain'
-                          : 'Experience Scope & Seniority';
+                            ? 'Banking & Governance Domain'
+                            : 'Experience Scope & Seniority';
                       return (
                         <div
                           key={key}

@@ -1,11 +1,13 @@
+import hashlib
+import json
 from pathlib import Path
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.entities import JobListing
+from app.models.entities import JobListing, LLMEvaluation, utcnow
 from app.models.schemas import (
     ResumeOut,
     ResumeLatexUpdate,
@@ -192,15 +194,53 @@ def get_top_job_matches_for_active_resume(db: Session = Depends(get_db)):
     )
 
 
-@router.post("/{resume_id}/match-job/{job_id}", response_model=ExplainableMatchResponse)
-def evaluate_resume_against_job(
+@router.get("/{resume_id}/match-job/{job_id}", response_model=Optional[ExplainableMatchResponse])
+def get_cached_job_match(
     resume_id: int,
     job_id: int,
     db: Session = Depends(get_db),
 ):
     """
+    Retrieves previously cached Explainable AI evaluation for a resume-job pair.
+    Makes ZERO external API calls.
+    """
+    resume = resume_service.get_resume_by_id(db, resume_id)
+    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+    if not resume or not job:
+        return None
+
+    resume_text = resume.raw_text or resume.latex_source or ""
+    job_text = job.original_description or f"{job.title} {job.responsibilities or ''}"
+    content_hash = hashlib.sha256((resume_text + job_text).encode("utf-8")).hexdigest()
+
+    cached = db.query(LLMEvaluation).filter(
+        LLMEvaluation.resume_id == resume_id,
+        LLMEvaluation.job_id == job_id,
+        LLMEvaluation.content_hash == content_hash,
+    ).first()
+
+    if cached:
+        try:
+            data = json.loads(cached.evaluation_json)
+            data["is_cached"] = True
+            return ExplainableMatchResponse(**data)
+        except Exception:
+            pass
+
+    return None
+
+
+@router.post("/{resume_id}/match-job/{job_id}", response_model=ExplainableMatchResponse)
+def evaluate_resume_against_job(
+    resume_id: int,
+    job_id: int,
+    force_refresh: bool = Query(default=False, description="Bypass cache and force a new Gemini evaluation"),
+    db: Session = Depends(get_db),
+):
+    """
     Evaluates a specific resume against a target JPMC job listing.
-    Uses Google Gemini Flash API for Explainable AI reasoning with graceful offline fallback.
+    Includes persistent SQLite caching: only makes an external API call when
+    never evaluated before or when force_refresh=true.
     """
     resume = resume_service.get_resume_by_id(db, resume_id)
     if not resume:
@@ -211,5 +251,58 @@ def evaluate_resume_against_job(
         raise HTTPException(status_code=404, detail="Job listing not found")
 
     resume_text = resume.raw_text or resume.latex_source or ""
-    return explainable_resume_match(resume_text, job)
+    job_text = job.original_description or f"{job.title} {job.responsibilities or ''}"
+    content_hash = hashlib.sha256((resume_text + job_text).encode("utf-8")).hexdigest()
+
+    # 1. Check local cache first if not force_refresh
+    if not force_refresh:
+        cached = db.query(LLMEvaluation).filter(
+            LLMEvaluation.resume_id == resume_id,
+            LLMEvaluation.job_id == job_id,
+            LLMEvaluation.content_hash == content_hash,
+        ).first()
+
+        if cached:
+            try:
+                data = json.loads(cached.evaluation_json)
+                data["is_cached"] = True
+                return ExplainableMatchResponse(**data)
+            except Exception:
+                pass
+
+    # 2. Generate new evaluation (calls Gemini if key present, else offline taxonomy)
+    evaluation = explainable_resume_match(resume_text, job)
+    evaluation.is_cached = False
+
+    # 3. Save to persistent cache in SQLite
+    try:
+        eval_dict = evaluation.model_dump()
+        eval_json = json.dumps(eval_dict)
+
+        existing = db.query(LLMEvaluation).filter(
+            LLMEvaluation.resume_id == resume_id,
+            LLMEvaluation.job_id == job_id,
+        ).first()
+
+        if existing:
+            existing.content_hash = content_hash
+            existing.evaluation_json = eval_json
+            existing.is_llm_powered = 1 if evaluation.is_llm_powered else 0
+            existing.updated_at = utcnow()
+        else:
+            new_record = LLMEvaluation(
+                resume_id=resume_id,
+                job_id=job_id,
+                content_hash=content_hash,
+                evaluation_json=eval_json,
+                is_llm_powered=1 if evaluation.is_llm_powered else 0,
+            )
+            db.add(new_record)
+
+        db.commit()
+    except Exception as e:
+        print(f"Warning: could not cache LLM evaluation in SQLite: {e}")
+        db.rollback()
+
+    return evaluation
 

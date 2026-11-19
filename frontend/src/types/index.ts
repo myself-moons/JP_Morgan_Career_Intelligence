@@ -142,6 +142,7 @@ export interface ExplainableMatch {
   critical_missing_skills: string[];
   actionable_latex_recommendations: string[];
   is_llm_powered: boolean;
+  is_cached?: boolean;
 }
 
 export interface TopJobMatch {

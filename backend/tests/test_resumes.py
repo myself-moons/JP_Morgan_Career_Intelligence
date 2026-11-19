@@ -10,9 +10,9 @@ def setup_resumes():
     db = SessionLocal()
     try:
         seed_resumes(db)
-        yield
     finally:
         db.close()
+    yield
 
 
 @pytest.mark.asyncio
@@ -157,4 +157,17 @@ async def test_explainable_match_endpoint():
         assert "verified_matched_skills" in eval_data
         assert "critical_missing_skills" in eval_data
         assert "actionable_latex_recommendations" in eval_data
+
+        # Verify persistent caching in SQLite: GET cached evaluation
+        get_cached = await client.get(f"/api/resumes/{resume_id}/match-job/{job_id}")
+        assert get_cached.status_code == 200
+        cached_data = get_cached.json()
+        assert cached_data is not None
+        assert cached_data["is_cached"] is True
+        assert cached_data["overall_score"] == eval_data["overall_score"]
+
+        # Calling POST again without force_refresh loads from cache (0 API calls)
+        repeat_post = await client.post(f"/api/resumes/{resume_id}/match-job/{job_id}")
+        assert repeat_post.status_code == 200
+        assert repeat_post.json()["is_cached"] is True
 
