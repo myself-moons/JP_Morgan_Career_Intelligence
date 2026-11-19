@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.core.database import engine, Base, SessionLocal
+from app.core.database import engine, Base, SessionLocal, init_db
 from app.models.entities import JobListing
 from app.core.seed import seed_baseline_jobs
 from app.api.health import router as health_router
@@ -15,8 +15,8 @@ async def lifespan(app: FastAPI):
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
     settings.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Initialize database tables
-    Base.metadata.create_all(bind=engine)
+    # Initialize database tables & run auto-migrations
+    init_db()
 
     # Auto-seed baseline jobs if database is fresh
     db = SessionLocal()

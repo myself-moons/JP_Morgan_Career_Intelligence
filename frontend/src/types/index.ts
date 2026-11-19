@@ -31,6 +31,10 @@ export interface Job {
   status: string;
   original_description?: string | null;
   cleaned_description?: string | null;
+  summary?: string | null;
+  responsibilities?: string | null;
+  qualifications?: string | null;
+  preferred_qualifications?: string | null;
   context_note?: string | null;
   created_at: string;
   updated_at: string;
@@ -44,12 +48,32 @@ export interface JobListResponse {
   status_counts: Record<string, number>;
 }
 
+export interface ParsedFields {
+  title?: string | null;
+  company_name?: string | null;
+  location?: string | null;
+  role_family?: string | null;
+  status?: string | null;
+  extracted_req_id?: string | null;
+  summary?: string | null;
+  responsibilities?: string | null;
+  qualifications?: string | null;
+  preferred_qualifications?: string | null;
+  warnings: Record<string, string>;
+}
+
 export interface UploadResponse {
   filename: string;
   extracted_text: string;
   preview: string;
   char_count: number;
   line_count: number;
+  parsed_fields: ParsedFields;
+  suggested_code: string;
+}
+
+export interface NextCodeResponse {
+  next_code: string;
 }
 
 export interface Skill {

@@ -205,6 +205,8 @@ The MVP has one local user with full access to the local dataset. There is no pu
 | **TC-19** | **Resume coverage against a JD** | For a chosen JD and uploaded resume, system lists each required and preferred skill, shows whether the resume mentions it, and displays the matching line from both texts using canonical skills and aliases with no single composite score. |
 | **TC-20** | **Skill that is in the resume but has no evidence** | System flags skills mentioned in the resume that lack supporting profile evidence as "Claimed in resume, unsupported by profile evidence", preserving evidence status integrity per BR-13. |
 | **TC-21** | **Reference Data role postgraduate requirement under education** | System evaluates the postgraduate finance qualification strictly under the **Education / Eligibility** fit dimension, displaying it separately from technical skill gaps per BR-15. |
+| **TC-22** | **AI-assisted semantic taxonomy disambiguation** | When an ambiguous skill phrase is sent to the LLM adapter, system returns candidate canonical taxonomy mappings with confidence score and justification; when API key is missing, system falls back cleanly to manual review without error. |
+| **TC-23** | **AI-assisted resume critique & graceful degradation** | When requested, LLM adapter evaluates resume bullet points against target JD, identifies implicit capabilities and bullet rewording suggestions; if offline or unconfigured, standard deterministic line matching (TC-19) continues unaffected. |
 
 ## 9. MVP release priority
 
@@ -224,6 +226,18 @@ The MVP has one local user with full access to the local dataset. There is no pu
 - **Uploaded file retention:** Should raw PDF/DOCX files be retained on disk after text extraction? *(Current stance: Retain in local `uploads/` folder for verification; exclude folder from Git).*
 - **Stale listing review cadence:** What criteria mark an active listing as stale? *(Recommendation: Flag listings older than 90 days or when verified closed on careers portal).*
 - **Free learning resource verification:** How frequently should free course availability and audit access be re-checked? *(Recommendation: Manual verification date stored; quarterly review cadence).*
+
+---
+
+### Phase 1 Hybrid Intelligence Requirements (Zero-RAM Cloud LLM Adapter)
+
+**FR-42 AI-assisted semantic taxonomy disambiguation:** The backend shall provide an optional endpoint to query a lightweight external cloud LLM (e.g. Google Gemini 1.5 Flash or Groq Llama 3 via free tier API) to analyze unmapped or ambiguous skill phrases in their surrounding JD sentence context, propose the most appropriate canonical skill from the existing taxonomy, and provide a confidence rating and brief rationale. All suggested mappings shall remain provisional until explicitly confirmed or edited by the user in the review workflow (FR-14). If the external service is unavailable or unconfigured, the system shall gracefully fall back to manual entry without error.
+
+**FR-43 AI-assisted semantic resume critique & rewording recommendations:** The backend shall provide an optional endpoint to submit parsed resume text and a target JD to the external LLM adapter to generate deep qualitative alignment feedback. The evaluation shall:
+1. Detect implicit capabilities and contextual skills demonstrated in experience bullets that do not contain verbatim keywords.
+2. Evaluate bullet strength (action verbs, quantifiable metrics, clarity for financial technology roles).
+3. Generate authentic, evidence-based bullet rewording recommendations that highlight verified project deliverables (e.g. CardLyze independent vs. AI-assisted achievements) without inflating proficiency claims or violating rule BR-13.
+The system shall display this critique in a dedicated frontend inspection drawer while preserving the deterministic, line-by-line keyword coverage table (FR-38).
 
 ---
 

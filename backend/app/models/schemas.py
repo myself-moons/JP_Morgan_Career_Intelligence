@@ -13,6 +13,10 @@ class JobBase(BaseModel):
     role_family: str = Field(..., description="Role family (e.g. Family A, Family B, Family C)")
     status: str = Field(default="Available", description="Listing status: Available, JD unavailable, etc.")
     original_description: Optional[str] = Field(None, description="Verbatim captured JD text")
+    summary: Optional[str] = Field(None, description="Role overview or summary")
+    responsibilities: Optional[str] = Field(None, description="Extracted responsibilities")
+    qualifications: Optional[str] = Field(None, description="Extracted required qualifications")
+    preferred_qualifications: Optional[str] = Field(None, description="Extracted preferred qualifications")
     context_note: Optional[str] = Field(None, description="Supplementary context or research notes")
 
 
@@ -28,6 +32,10 @@ class JobUpdate(BaseModel):
     role_family: Optional[str] = None
     status: Optional[str] = None
     original_description: Optional[str] = None
+    summary: Optional[str] = None
+    responsibilities: Optional[str] = None
+    qualifications: Optional[str] = None
+    preferred_qualifications: Optional[str] = None
     context_note: Optional[str] = None
 
 
@@ -46,6 +54,10 @@ class JobOut(BaseModel):
     status: str
     original_description: Optional[str] = None
     cleaned_description: Optional[str] = None
+    summary: Optional[str] = None
+    responsibilities: Optional[str] = None
+    qualifications: Optional[str] = None
+    preferred_qualifications: Optional[str] = None
     context_note: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -59,9 +71,34 @@ class JobListResponse(BaseModel):
     status_counts: Dict[str, int]
 
 
+class ParsedFields(BaseModel):
+    title: Optional[str] = None
+    company_name: Optional[str] = None
+    location: Optional[str] = None
+    role_family: Optional[str] = None
+    status: Optional[str] = None
+    extracted_req_id: Optional[str] = None
+    summary: Optional[str] = None
+    responsibilities: Optional[str] = None
+    qualifications: Optional[str] = None
+    preferred_qualifications: Optional[str] = None
+    warnings: Dict[str, str] = Field(default_factory=dict)
+
+
 class UploadResponse(BaseModel):
     filename: str
     extracted_text: str
     preview: str
     char_count: int
     line_count: int
+    parsed_fields: ParsedFields
+    suggested_code: str
+
+
+class ParseTextRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Raw text to extract fields from")
+    filename: Optional[str] = None
+
+
+class NextCodeResponse(BaseModel):
+    next_code: str = Field(..., description="Auto-incremented numerical requisition code, e.g. JB-1")

@@ -52,6 +52,35 @@ export async function fetchJobById(jobId: number): Promise<Job> {
   return response.json();
 }
 
+export async function fetchNextJobCode(): Promise<string> {
+  const response = await fetch(`${API_BASE}/jobs/next-code`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    return 'JB-1';
+  }
+  const data = await response.json();
+  return data.next_code || 'JB-1';
+}
+
+export async function parseRawText(
+  text: string,
+  filename?: string
+): Promise<import('../types').ParsedFields> {
+  const response = await fetch(`${API_BASE}/jobs/parse-text`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ text, filename }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to parse text fields');
+  }
+  return response.json();
+}
+
 export async function createJob(payload: {
   title: string;
   company_name?: string;
@@ -62,6 +91,10 @@ export async function createJob(payload: {
   role_family: string;
   status?: string;
   original_description?: string;
+  summary?: string;
+  responsibilities?: string;
+  qualifications?: string;
+  preferred_qualifications?: string;
   context_note?: string;
 }): Promise<Job> {
   const response = await fetch(`${API_BASE}/jobs`, {
