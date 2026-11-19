@@ -1,4 +1,4 @@
-import { HealthStatus, Job, JobListResponse, UploadResponse } from '../types';
+import { HealthStatus, Job, JobListResponse, UploadResponse, ResumeDocument, SyncResult } from '../types';
 
 const API_BASE = '/api';
 
@@ -145,3 +145,110 @@ export async function seedBaselineJobs(): Promise<{ status: string; seeded_count
   }
   return response.json();
 }
+
+export async function syncJpmcJobs(limit: number = 25, dryRun: boolean = false): Promise<SyncResult> {
+  const response = await fetch(`${API_BASE}/jobs/sync`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ limit, dry_run: dryRun }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `JPMC Sync failed (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function updateJob(
+  jobId: number,
+  payload: Partial<Job>
+): Promise<Job> {
+  const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to update job (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function fetchResumes(): Promise<ResumeDocument[]> {
+  const response = await fetch(`${API_BASE}/resumes`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch resumes: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function fetchActiveResume(): Promise<ResumeDocument | null> {
+  const response = await fetch(`${API_BASE}/resumes/active`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    return null;
+  }
+  return response.json();
+}
+
+export async function activateResume(resumeId: number): Promise<ResumeDocument> {
+  const response = await fetch(`${API_BASE}/resumes/${resumeId}/activate`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to activate resume: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function updateResumeLatex(resumeId: number, latex_source: string): Promise<ResumeDocument> {
+  const response = await fetch(`${API_BASE}/resumes/${resumeId}/latex`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ latex_source }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to save LaTeX (${response.status})`);
+  }
+  return response.json();
+}
+
+export function getResumePdfUrl(resumeId: number): string {
+  return `${API_BASE}/resumes/${resumeId}/pdf`;
+}
+
+export function getResumeTexUrl(resumeId: number): string {
+  return `${API_BASE}/resumes/${resumeId}/export-tex`;
+}
+
+export async function uploadResumeFile(name: string, file: File): Promise<ResumeDocument> {
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE}/resumes/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Resume upload failed (${response.status})`);
+  }
+  return response.json();
+}
+

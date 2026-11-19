@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './pages/Dashboard';
 import { JobLibrary } from './pages/JobLibrary';
+import { ResumeWorkspace } from './pages/ResumeWorkspace';
 import { SkillAnalysis } from './pages/SkillAnalysis';
 import { ProfileMatcher } from './pages/ProfileMatcher';
 import { LearningTracker } from './pages/LearningTracker';
@@ -50,6 +51,7 @@ export const App: React.FC = () => {
           <Dashboard health={health} onNavigate={setActiveTab} />
         )}
         {activeTab === 'jobs' && <JobLibrary />}
+        {activeTab === 'resumes' && <ResumeWorkspace />}
         {activeTab === 'skills' && <SkillAnalysis />}
         {activeTab === 'profile' && <ProfileMatcher />}
         {activeTab === 'learning' && <LearningTracker />}

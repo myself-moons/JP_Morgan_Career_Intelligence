@@ -14,7 +14,7 @@ export type RoleFamily =
   | 'Family C: Finance, Credit and Operations'
   | string;
 
-export type JobStatus = 'Available' | 'JD unavailable' | 'Stale' | 'Archived';
+export type JobStatus = 'Available' | 'JD unavailable' | 'Discovered' | 'Stale' | 'Archived';
 export type SkillType = 'Technical' | 'Soft' | 'Domain' | 'Tool';
 export type RequirementLevel = 'Required' | 'Preferred';
 
@@ -24,6 +24,7 @@ export interface Job {
   company_name: string;
   title: string;
   external_job_id?: string | null;
+  source_job_id?: string | null;
   location: string;
   source_url?: string | null;
   capture_date: string;
@@ -105,9 +106,32 @@ export interface ProfileEvidence {
   evidence_text: string;
 }
 
+export interface ResumeDocument {
+  id: number;
+  name: string;
+  pdf_filename?: string | null;
+  latex_filename?: string | null;
+  raw_text?: string | null;
+  latex_source?: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SyncResult {
+  total_found: number;
+  added: number;
+  updated: number;
+  unchanged: number;
+  stale: number;
+  jobs: Job[];
+  message: string;
+}
+
 export type ActiveTab =
   | 'dashboard'
   | 'jobs'
+  | 'resumes'
   | 'skills'
   | 'profile'
   | 'learning'
