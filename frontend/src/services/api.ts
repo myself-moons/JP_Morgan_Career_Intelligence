@@ -1,4 +1,13 @@
-import { HealthStatus, Job, JobListResponse, UploadResponse, ResumeDocument, SyncResult } from '../types';
+import {
+  HealthStatus,
+  Job,
+  JobListResponse,
+  UploadResponse,
+  ResumeDocument,
+  SyncResult,
+  ExplainableMatch,
+  TopJobMatchesResponse,
+} from '../types';
 
 const API_BASE = '/api';
 
@@ -251,4 +260,31 @@ export async function uploadResumeFile(name: string, file: File): Promise<Resume
   }
   return response.json();
 }
+
+export async function evaluateResumeAgainstJob(
+  resumeId: number,
+  jobId: number
+): Promise<ExplainableMatch> {
+  const response = await fetch(`${API_BASE}/resumes/${resumeId}/match-job/${jobId}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Evaluation failed (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function fetchTopJobMatches(): Promise<TopJobMatchesResponse> {
+  const response = await fetch(`${API_BASE}/resumes/active/top-matches`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to fetch top job matches (${response.status})`);
+  }
+  return response.json();
+}
+
 

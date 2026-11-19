@@ -138,3 +138,36 @@ class ResumeOut(BaseModel):
 class ResumeLatexUpdate(BaseModel):
     latex_source: str = Field(..., description="Updated LaTeX source code")
 
+
+class DimensionDetail(BaseModel):
+    score: int = Field(..., ge=0, le=100)
+    reasoning: str
+
+
+class ExplainableMatchResponse(BaseModel):
+    overall_score: int = Field(..., ge=0, le=100)
+    readiness_verdict: str
+    summary_reasoning: str
+    dimensions: Dict[str, DimensionDetail] = Field(default_factory=dict)
+    verified_matched_skills: List[str] = Field(default_factory=list)
+    critical_missing_skills: List[str] = Field(default_factory=list)
+    actionable_latex_recommendations: List[str] = Field(default_factory=list)
+    is_llm_powered: bool = False
+
+
+class TopJobMatch(BaseModel):
+    job_id: int
+    title: str
+    external_job_id: Optional[str] = None
+    role_family: str
+    score: int
+    matched_skills: List[str]
+    readiness_verdict: str
+
+
+class TopJobMatchesResponse(BaseModel):
+    active_resume_id: int
+    active_resume_name: str
+    top_matches: List[TopJobMatch]
+
+

@@ -128,6 +128,39 @@ export interface SyncResult {
   message: string;
 }
 
+export interface DimensionDetail {
+  score: number;
+  reasoning: string;
+}
+
+export interface ExplainableMatch {
+  overall_score: number;
+  readiness_verdict: string;
+  summary_reasoning: string;
+  dimensions: Record<string, DimensionDetail>;
+  verified_matched_skills: string[];
+  critical_missing_skills: string[];
+  actionable_latex_recommendations: string[];
+  is_llm_powered: boolean;
+}
+
+export interface TopJobMatch {
+  job_id: number;
+  title: string;
+  external_job_id?: string | null;
+  role_family: string;
+  score: number;
+  matched_skills: string[];
+  readiness_verdict: string;
+}
+
+export interface TopJobMatchesResponse {
+  active_resume_id: number;
+  active_resume_name: string;
+  top_matches: TopJobMatch[];
+}
+
+
 export type ActiveTab =
   | 'dashboard'
   | 'jobs'

@@ -110,3 +110,51 @@ async def test_update_latex_and_export():
             f"/api/resumes/{tex_resume['id']}/latex",
             json={"latex_source": original_latex}
         )
+
+
+@pytest.mark.asyncio
+async def test_top_matches_endpoint():
+    """Verify GET /api/resumes/active/top-matches returns top 5 ranked jobs."""
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        resp = await client.get("/api/resumes/active/top-matches")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "active_resume_name" in data
+        assert "top_matches" in data
+        assert len(data["top_matches"]) <= 5
+        if data["top_matches"]:
+            top = data["top_matches"][0]
+            assert "score" in top
+            assert "matched_skills" in top
+            assert "readiness_verdict" in top
+
+
+@pytest.mark.asyncio
+async def test_explainable_match_endpoint():
+    """Verify POST /api/resumes/{resume_id}/match-job/{job_id} generates explainable evaluation."""
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        # Get active resume
+        act_resp = await client.get("/api/resumes/active")
+        assert act_resp.status_code == 200
+        resume_id = act_resp.json()["id"]
+
+        # Get first job
+        jobs_resp = await client.get("/api/jobs")
+        assert jobs_resp.status_code == 200
+        job_id = jobs_resp.json()["jobs"][0]["id"]
+
+        eval_resp = await client.post(f"/api/resumes/{resume_id}/match-job/{job_id}")
+        assert eval_resp.status_code == 200
+        eval_data = eval_resp.json()
+        assert "overall_score" in eval_data
+        assert "readiness_verdict" in eval_data
+        assert "summary_reasoning" in eval_data
+        assert "dimensions" in eval_data
+        assert "verified_matched_skills" in eval_data
+        assert "critical_missing_skills" in eval_data
+        assert "actionable_latex_recommendations" in eval_data
+

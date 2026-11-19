@@ -12,9 +12,13 @@ import {
   Eye,
   Columns,
   Sparkles,
-  Briefcase
+  Briefcase,
+  Award,
+  AlertTriangle,
+  Copy,
+  Check,
 } from 'lucide-react';
-import { ResumeDocument, Job } from '../types';
+import { ResumeDocument, Job, ExplainableMatch } from '../types';
 import {
   fetchResumes,
   activateResume,
@@ -22,7 +26,8 @@ import {
   getResumePdfUrl,
   getResumeTexUrl,
   uploadResumeFile,
-  fetchJobs
+  fetchJobs,
+  evaluateResumeAgainstJob,
 } from '../services/api';
 
 export const ResumeWorkspace: React.FC = () => {
@@ -41,12 +46,45 @@ export const ResumeWorkspace: React.FC = () => {
   // Target Job matching preview
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+  const [explainableMatch, setExplainableMatch] = useState<ExplainableMatch | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
+  const [evalError, setEvalError] = useState<string | null>(null);
+  const [copiedRecIdx, setCopiedRecIdx] = useState<number | null>(null);
 
   // Upload modal state
   const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
   const [uploadName, setUploadName] = useState<string>('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+
+  const runEvaluation = async (jobId: number, resumeId?: number) => {
+    const resId = resumeId || selectedResumeId;
+    if (!resId || !jobId) return;
+    try {
+      setIsEvaluating(true);
+      setEvalError(null);
+      const evalData = await evaluateResumeAgainstJob(resId, jobId);
+      setExplainableMatch(evalData);
+    } catch (err: any) {
+      setEvalError(err?.message || 'Failed to evaluate job match');
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  const handleJobSelect = (jobId: number | null) => {
+    setSelectedJobId(jobId);
+    setExplainableMatch(null);
+    if (jobId) {
+      runEvaluation(jobId);
+    }
+  };
+
+  const handleCopyRecommendation = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedRecIdx(idx);
+    setTimeout(() => setCopiedRecIdx(null), 2500);
+  };
 
   const loadData = async () => {
     try {
@@ -152,30 +190,7 @@ export const ResumeWorkspace: React.FC = () => {
     }
   };
 
-  // Simple keyword matching for target job vs current resume
   const targetJob = jobs.find(j => j.id === selectedJobId) || null;
-  const resumeText = (selectedResume?.raw_text || '').toLowerCase();
-
-  const getJobKeywordStats = () => {
-    if (!targetJob) return null;
-    const reqText = `${targetJob.responsibilities || ''} ${targetJob.qualifications || ''} ${targetJob.preferred_qualifications || ''}`;
-    // Extract keywords
-    const terms = Array.from(
-      new Set(
-        (reqText.match(/\b[A-Za-z0-9+#.]{3,20}\b/g) || [])
-          .map(w => w.trim().toLowerCase())
-          .filter(w => !['the', 'and', 'for', 'with', 'that', 'this', 'have', 'from', 'your', 'will', 'role', 'team'].includes(w))
-      )
-    ).slice(0, 30);
-
-    const matched = terms.filter(t => resumeText.includes(t));
-    const missing = terms.filter(t => !resumeText.includes(t));
-    const score = terms.length > 0 ? Math.round((matched.length / terms.length) * 100) : 0;
-
-    return { matched, missing, score };
-  };
-
-  const matchStats = getJobKeywordStats();
 
   return (
     <div className="space-y-6">
@@ -423,7 +438,7 @@ export const ResumeWorkspace: React.FC = () => {
               <span className="text-xs text-slate-400">Select Job Listing:</span>
               <select
                 value={selectedJobId || ''}
-                onChange={e => setSelectedJobId(Number(e.target.value) || null)}
+                onChange={e => handleJobSelect(Number(e.target.value) || null)}
                 className="bg-slate-950 text-white text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-500"
               >
                 <option value="">-- Choose Target JPMC Role --</option>
@@ -436,70 +451,225 @@ export const ResumeWorkspace: React.FC = () => {
             </div>
           </div>
 
-          {targetJob && matchStats ? (
+          {targetJob ? (
             <div className="space-y-4 pt-2">
-              <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-slate-950 border border-slate-800 rounded-lg">
+              <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-950 border border-slate-800 rounded-xl">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">
-                    {targetJob.title}
-                  </h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-cyan-400 font-bold text-xs bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">
+                      {targetJob.external_job_id || `ID-${targetJob.id}`}
+                    </span>
+                    <h3 className="text-sm font-bold text-white">
+                      {targetJob.title}
+                    </h3>
+                  </div>
                   <p className="text-xs text-slate-400">
-                    {targetJob.role_family} • Status: <span className="text-cyan-300 font-medium">{targetJob.status}</span>
+                    {targetJob.role_family} • Location: <span className="text-slate-300">{targetJob.location}</span>
                   </p>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <span className="text-xs text-slate-400">Keyword Alignment:</span>
-                    <div className="text-lg font-bold text-cyan-400">{matchStats.score}%</div>
-                  </div>
-                  <div className="w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className="bg-cyan-500 h-2.5 rounded-full"
-                      style={{ width: `${matchStats.score}%` }}
-                    />
-                  </div>
+                  <button
+                    onClick={() => selectedJobId && runEvaluation(selectedJobId)}
+                    disabled={isEvaluating}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-semibold shadow-md transition disabled:opacity-60"
+                  >
+                    <Sparkles size={14} className={isEvaluating ? 'animate-spin' : ''} />
+                    <span>{isEvaluating ? 'Evaluating with AI...' : 'Re-Analyze Match'}</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 rounded-lg">
-                  <div className="font-semibold text-emerald-400 mb-2 flex items-center gap-1.5">
-                    <CheckCircle2 size={14} />
-                    <span>Keywords Found in Active Resume ({matchStats.matched.length})</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {matchStats.matched.map(kw => (
-                      <span
-                        key={kw}
-                        className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30"
-                      >
-                        {kw}
-                      </span>
-                    ))}
-                  </div>
+              {evalError && (
+                <div className="p-3 bg-rose-950/40 border border-rose-800 text-rose-300 rounded-lg text-xs flex items-center gap-2">
+                  <AlertCircle size={15} />
+                  <span>{evalError}</span>
                 </div>
+              )}
 
-                <div className="p-3 bg-amber-950/20 border border-amber-900/40 rounded-lg">
-                  <div className="font-semibold text-amber-400 mb-2 flex items-center gap-1.5">
-                    <Sparkles size={14} />
-                    <span>Potential Keywords to Emphasize in LaTeX ({matchStats.missing.length})</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {matchStats.missing.slice(0, 15).map(kw => (
-                      <span
-                        key={kw}
-                        className="px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30"
-                      >
-                        {kw}
-                      </span>
-                    ))}
-                  </div>
+              {isEvaluating && (
+                <div className="p-8 text-center bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                  <Sparkles size={28} className="mx-auto text-cyan-400 animate-bounce" />
+                  <p className="text-xs font-semibold text-slate-300">
+                    Running Explainable AI Bar Raiser Evaluation...
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Analyzing qualifications, technical stack, and domain governance fit against JPMorgan Chase standards.
+                  </p>
                 </div>
-              </div>
+              )}
+
+              {explainableMatch && !isEvaluating && (
+                <div className="space-y-4">
+                  {/* Score & Verdict Banner */}
+                  <div className="p-4 bg-gradient-to-r from-slate-950 to-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                          Hiring Bar Verdict:
+                        </span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                            explainableMatch.overall_score >= 80
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              : explainableMatch.overall_score >= 60
+                              ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                              : explainableMatch.overall_score >= 40
+                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                              : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                          }`}
+                        >
+                          {explainableMatch.readiness_verdict}
+                        </span>
+                        {explainableMatch.is_llm_powered ? (
+                          <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 flex items-center gap-1">
+                            <Sparkles size={11} /> Gemini Flash
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700">
+                            Curated Taxonomy
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+                        {explainableMatch.summary_reasoning}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <span className="text-[11px] text-slate-400 font-medium">Match Fit Score</span>
+                        <div className="text-2xl font-black text-cyan-400">
+                          {explainableMatch.overall_score}%
+                        </div>
+                      </div>
+                      <div className="w-20 bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className={`h-2.5 rounded-full transition-all duration-500 ${
+                            explainableMatch.overall_score >= 80
+                              ? 'bg-emerald-500'
+                              : explainableMatch.overall_score >= 60
+                              ? 'bg-cyan-500'
+                              : 'bg-amber-500'
+                          }`}
+                          style={{ width: `${explainableMatch.overall_score}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3 Dimensional Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {Object.entries(explainableMatch.dimensions).map(([key, dim]) => {
+                      const title =
+                        key === 'technical_skills'
+                          ? 'Technical & Stack Alignment'
+                          : key === 'domain_knowledge'
+                          ? 'Banking & Governance Domain'
+                          : 'Experience Scope & Seniority';
+                      return (
+                        <div
+                          key={key}
+                          className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-300">{title}</span>
+                            <span className="text-xs font-bold text-cyan-400">{dim.score}%</span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 leading-relaxed">
+                            {dim.reasoning}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Matched vs Missing Genuine Skills */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div className="p-4 bg-emerald-950/20 border border-emerald-900/40 rounded-xl space-y-2">
+                      <div className="font-semibold text-emerald-400 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 size={14} />
+                          <span>Verified Matched Competencies</span>
+                        </span>
+                        <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full">
+                          {explainableMatch.verified_matched_skills.length} Skills
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {explainableMatch.verified_matched_skills.map((skill) => (
+                          <span
+                            key={skill}
+                            className="px-2.5 py-1 bg-emerald-500/15 text-emerald-300 rounded-md border border-emerald-500/30 font-medium"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-amber-950/20 border border-amber-900/40 rounded-xl space-y-2">
+                      <div className="font-semibold text-amber-400 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <AlertTriangle size={14} />
+                          <span>Critical Gaps to Address</span>
+                        </span>
+                        <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded-full">
+                          {explainableMatch.critical_missing_skills.length} Gaps
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {explainableMatch.critical_missing_skills.map((gap) => (
+                          <span
+                            key={gap}
+                            className="px-2.5 py-1 bg-amber-500/15 text-amber-300 rounded-md border border-amber-500/30 font-medium"
+                          >
+                            {gap}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actionable LaTeX Recommendations */}
+                  {explainableMatch.actionable_latex_recommendations.length > 0 && (
+                    <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
+                        <Award size={15} className="text-cyan-400" />
+                        <span>Actionable Resume Adjustments for In-App LaTeX Editor</span>
+                      </div>
+                      <div className="space-y-2">
+                        {explainableMatch.actionable_latex_recommendations.map((rec, idx) => (
+                          <div
+                            key={idx}
+                            className="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80 flex items-start justify-between gap-3 text-xs"
+                          >
+                            <div className="flex items-start gap-2 text-slate-300 leading-relaxed">
+                              <span className="text-cyan-400 font-bold">{idx + 1}.</span>
+                              <span>{rec}</span>
+                            </div>
+                            <button
+                              onClick={() => handleCopyRecommendation(rec, idx)}
+                              className="text-slate-400 hover:text-white p-1 shrink-0 rounded transition"
+                              title="Copy to clipboard"
+                            >
+                              {copiedRecIdx === idx ? (
+                                <Check size={14} className="text-emerald-400" />
+                              ) : (
+                                <Copy size={14} />
+                              )}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-xs text-slate-500 italic">
-              Select a job listing from the dropdown to compare keyword alignment and see bullet points to tune in LaTeX.
+              Select a job listing from the dropdown to run an Explainable AI assessment and see targeted recommendations.
             </p>
           )}
         </div>

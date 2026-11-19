@@ -5,8 +5,15 @@ from fastapi.responses import FileResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.schemas import ResumeOut, ResumeLatexUpdate
+from app.models.entities import JobListing
+from app.models.schemas import (
+    ResumeOut,
+    ResumeLatexUpdate,
+    ExplainableMatchResponse,
+    TopJobMatchesResponse,
+)
 from app.services import resume_service
+from app.services.llm_matcher import explainable_resume_match, rank_top_jobs_for_resume
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
@@ -157,3 +164,52 @@ async def upload_resume(
         db.commit()
         db.refresh(new_resume)
         return new_resume
+
+
+@router.get("/active/top-matches", response_model=TopJobMatchesResponse)
+def get_top_job_matches_for_active_resume(db: Session = Depends(get_db)):
+    """Computes Top 5 matching JPMC job listings for the current active resume."""
+    resumes = resume_service.get_all_resumes(db)
+    active = next((r for r in resumes if r.is_active == 1), None)
+    if not active and resumes:
+        active = resumes[0]
+
+    if not active:
+        raise HTTPException(status_code=404, detail="No active resume found in repository")
+
+    # Fetch available analysable jobs
+    available_jobs = db.query(JobListing).filter(JobListing.status == "Available").all()
+    if not available_jobs:
+        # If no available jobs, query all jobs
+        available_jobs = db.query(JobListing).all()
+
+    top_matches = rank_top_jobs_for_resume(active.raw_text or "", available_jobs, top_n=5)
+
+    return TopJobMatchesResponse(
+        active_resume_id=active.id,
+        active_resume_name=active.name,
+        top_matches=top_matches,
+    )
+
+
+@router.post("/{resume_id}/match-job/{job_id}", response_model=ExplainableMatchResponse)
+def evaluate_resume_against_job(
+    resume_id: int,
+    job_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Evaluates a specific resume against a target JPMC job listing.
+    Uses Google Gemini Flash API for Explainable AI reasoning with graceful offline fallback.
+    """
+    resume = resume_service.get_resume_by_id(db, resume_id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job listing not found")
+
+    resume_text = resume.raw_text or resume.latex_source or ""
+    return explainable_resume_match(resume_text, job)
+
