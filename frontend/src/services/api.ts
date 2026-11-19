@@ -281,9 +281,8 @@ export async function evaluateResumeAgainstJob(
   jobId: number,
   forceRefresh: boolean = false
 ): Promise<ExplainableMatch> {
-  const url = `${API_BASE}/resumes/${resumeId}/match-job/${jobId}${
-    forceRefresh ? '?force_refresh=true' : ''
-  }`;
+  const url = `${API_BASE}/resumes/${resumeId}/match-job/${jobId}${forceRefresh ? '?force_refresh=true' : ''
+    }`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { Accept: 'application/json' },
