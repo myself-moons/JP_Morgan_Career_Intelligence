@@ -22,9 +22,10 @@ def init_db():
         try:
             cursor = conn.exec_driver_sql("PRAGMA table_info(job_listings)")
             existing_cols = [row[1] for row in cursor.fetchall()]
-            for col in ["summary", "responsibilities", "qualifications", "preferred_qualifications"]:
+            for col in ["summary", "responsibilities", "qualifications", "preferred_qualifications", "source_job_id"]:
                 if col not in existing_cols and "title" in existing_cols:
-                    conn.exec_driver_sql(f"ALTER TABLE job_listings ADD COLUMN {col} TEXT")
+                    col_type = "VARCHAR(100)" if col == "source_job_id" else "TEXT"
+                    conn.exec_driver_sql(f"ALTER TABLE job_listings ADD COLUMN {col} {col_type}")
             conn.commit()
         except Exception:
             pass

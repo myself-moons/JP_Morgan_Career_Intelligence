@@ -119,20 +119,21 @@ The MVP has one local user with full access to the local dataset. There is no pu
 4. System shows progress but does not automatically upgrade profile skill proficiency to Demonstrated upon course completion.
 5. User separately updates profile evidence after completing practical, explainable deliverables.
 
-### 4.7 Resume upload and keyword coverage
+### 4.7 Resume management, in-app LaTeX editor, and keyword coverage
 
-1. User opens Profile and selects the Resume tab.
-2. User pastes resume text or uploads a PDF/DOCX file.
-3. System extracts text via PyMuPDF or python-docx and performs a parse check (FR-39). If empty text, scrambled columns, or distorted tables are detected, the system displays an alert with raw text preview.
-4. User reviews extracted text and confirms saving (FR-37).
-5. User navigates to a job in the Job Library and selects "Check Resume Coverage".
-6. System scans resume text against the target JD's required and preferred skills using the canonical skill taxonomy and alias dictionary (BR-14).
-7. System displays a side-by-side coverage view (FR-38):
+1. User opens Profile and navigates to the Resume Workspace.
+2. System displays a multi-resume selector (e.g. Fintech/Data Science vs. General SWE vs. Quant Risk) and auto-seeds existing resumes from `resumes/` folder (`Manthan_Fintech_Resume` and `Pretty_Resume`).
+3. User can upload new resumes (PDF, DOCX, or LaTeX `.tex`), view extracted text, or view an in-browser PDF stream preview.
+4. User can open the in-app syntax-highlighted LaTeX editor to customize bullet points directly for a target JPMC vacancy, with export to `.tex` or copy-to-Overleaf.
+5. System extracts text via PyMuPDF or python-docx and performs a parse check (FR-39). If empty text, scrambled columns, or distorted tables are detected, the system displays an alert with raw text preview.
+6. User selects an active resume and navigates to a job in the Job Library to select "Check Resume Coverage".
+7. System scans resume text against the target JD's required and preferred skills using the canonical skill taxonomy and alias dictionary (BR-14).
+8. System displays a side-by-side coverage view (FR-38):
    - Each required and preferred skill from the JD.
    - Mention status in the resume (Mentioned / Not Mentioned).
    - Verbatim matching line from the JD and verbatim matching line from the resume.
    - Strictly no single/composite ATS percentage score is generated.
-8. System cross-references detected resume skills against recorded profile evidence (FR-40, BR-13):
+9. System cross-references detected resume skills against recorded profile evidence (FR-40, BR-13):
    - Skills mentioned in the resume with corresponding profile evidence deliverables are marked verified.
    - Skills mentioned in the resume without recorded profile evidence are flagged as **Claimed but unsupported** (tied to the CardLyze attribution model).
 
@@ -222,7 +223,7 @@ The MVP has one local user with full access to the local dataset. There is no pu
 
 ## 10. Open functional decisions
 
-- **Profile and resume versioning:** Should the system allow multiple resume/profile snapshots for different career target tracks? *(Resolution for Phase 1: Support single active resume and single active profile; named multi-version snapshots designated for Phase 2).*
+- **Profile and resume versioning:** Should the system allow multiple resume/profile snapshots for different career target tracks? *(Resolution for Phase 1: Support multiple named resume documents in the repository with an active resume toggle for matching and in-app LaTeX customization; multi-version profile history designated for Phase 2).*
 - **Uploaded file retention:** Should raw PDF/DOCX files be retained on disk after text extraction? *(Current stance: Retain in local `uploads/` folder for verification; exclude folder from Git).*
 - **Stale listing review cadence:** What criteria mark an active listing as stale? *(Recommendation: Flag listings older than 90 days or when verified closed on careers portal).*
 - **Free learning resource verification:** How frequently should free course availability and audit access be re-checked? *(Recommendation: Manual verification date stored; quarterly review cadence).*

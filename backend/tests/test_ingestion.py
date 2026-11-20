@@ -24,7 +24,13 @@ def setup_database():
     db = SessionLocal()
     try:
         seed_baseline_jobs(db)
-        yield
+    finally:
+        db.close()
+
+    yield
+
+    db = SessionLocal()
+    try:
         # Teardown: Clean up test records
         db.query(JobListing).filter(JobListing.external_job_id.like("TEST-%")).delete(synchronize_session=False)
         db.commit()

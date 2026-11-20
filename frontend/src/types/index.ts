@@ -14,7 +14,7 @@ export type RoleFamily =
   | 'Family C: Finance, Credit and Operations'
   | string;
 
-export type JobStatus = 'Available' | 'JD unavailable' | 'Stale' | 'Archived';
+export type JobStatus = 'Available' | 'JD unavailable' | 'Discovered' | 'Stale' | 'Archived';
 export type SkillType = 'Technical' | 'Soft' | 'Domain' | 'Tool';
 export type RequirementLevel = 'Required' | 'Preferred';
 
@@ -24,6 +24,7 @@ export interface Job {
   company_name: string;
   title: string;
   external_job_id?: string | null;
+  source_job_id?: string | null;
   location: string;
   source_url?: string | null;
   capture_date: string;
@@ -105,9 +106,66 @@ export interface ProfileEvidence {
   evidence_text: string;
 }
 
+export interface ResumeDocument {
+  id: number;
+  name: string;
+  pdf_filename?: string | null;
+  latex_filename?: string | null;
+  raw_text?: string | null;
+  latex_source?: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SyncResult {
+  total_found: number;
+  added: number;
+  updated: number;
+  unchanged: number;
+  stale: number;
+  jobs: Job[];
+  message: string;
+}
+
+export interface DimensionDetail {
+  score: number;
+  reasoning: string;
+}
+
+export interface ExplainableMatch {
+  overall_score: number;
+  readiness_verdict: string;
+  summary_reasoning: string;
+  dimensions: Record<string, DimensionDetail>;
+  verified_matched_skills: string[];
+  critical_missing_skills: string[];
+  actionable_latex_recommendations: string[];
+  is_llm_powered: boolean;
+  is_cached?: boolean;
+}
+
+export interface TopJobMatch {
+  job_id: number;
+  title: string;
+  external_job_id?: string | null;
+  role_family: string;
+  score: number;
+  matched_skills: string[];
+  readiness_verdict: string;
+}
+
+export interface TopJobMatchesResponse {
+  active_resume_id: number;
+  active_resume_name: string;
+  top_matches: TopJobMatch[];
+}
+
+
 export type ActiveTab =
   | 'dashboard'
   | 'jobs'
+  | 'resumes'
   | 'skills'
   | 'profile'
   | 'learning'

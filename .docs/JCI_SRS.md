@@ -158,7 +158,7 @@ No external service is mandatory for the MVP. If optional AI or external resourc
 | Profile evidence | Record user experience supporting a skill. | Evidence ID, skill ID, status (Demonstrated, Partial, Learning, Not demonstrated), description, source/project, contribution type (independent, AI-assisted, supervised), date. |
 | Learning resource | Catalogue courses and simulations. | Resource ID, provider, title, URL, cost status (Free, Paid, Freemium, Unknown), certificate flag, duration, skill mapping, verification date. |
 | Learning progress | Track user progress. | Resource ID, status (Not started, In progress, Completed, Paused), start/completion dates, notes. |
-| Resume document | Store uploaded/pasted resume source text for keyword coverage. | Resume ID, user ID, source type (pasted, PDF, DOCX), raw text, parse check status, capture date, file path (if retained). |
+| Resume document | Store multiple named uploaded/pasted resumes and LaTeX source for keyword coverage and personalization. | Resume ID, user ID, name, source type (pasted, PDF, DOCX, LaTeX), raw text, latex_source, is_active flag, parse check status, capture date, file paths (PDF/TeX). |
 
 The database design must prevent orphan records and avoid duplicating the same captured job unintentionally. Foreign key integrity and unique constraints on external job IDs per company must be enforced.
 

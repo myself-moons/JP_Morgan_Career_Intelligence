@@ -7,6 +7,7 @@ import {
   UserCheck,
   GraduationCap,
   Database,
+  FileText,
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -25,7 +26,12 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
       id: 'jobs',
       label: 'Job Library',
       icon: <Briefcase className="w-4 h-4" />,
-      badge: '11 Jobs',
+    },
+    {
+      id: 'resumes',
+      label: 'Resume Workspace',
+      icon: <FileText className="w-4 h-4" />,
+      badge: 'LaTeX / PDF',
     },
     {
       id: 'skills',
