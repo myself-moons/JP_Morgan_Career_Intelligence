@@ -199,6 +199,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ health, onNavigate }) => {
                       <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                         {match.role_family.split(':')[0]}
                       </span>
+                      {match.capture_date && (
+                        <>
+                          <span>&bull;</span>
+                          <span className="text-[11px] text-slate-500">
+                            Posted: <strong className="text-slate-700 font-semibold">{match.capture_date}</strong>
+                          </span>
+                        </>
+                      )}
                       <span>&bull;</span>
                       <span className="text-[11px] text-slate-600">
                         Top Skills: <strong className="text-slate-800">{match.matched_skills.join(', ') || 'General overlap'}</strong>

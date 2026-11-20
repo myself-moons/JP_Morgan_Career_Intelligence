@@ -232,6 +232,11 @@ def sync_jpmc_jobs(
             if not existing.source_url:
                 existing.source_url = public_url
                 changed = True
+            if not existing.capture_date:
+                posted_date_raw = job_summary.get("PostedDate")
+                if posted_date_raw:
+                    existing.capture_date = str(posted_date_raw)[:10]
+                    changed = True
             if existing.status == "Stale":
                 existing.status = "Discovered"
                 changed = True
@@ -263,6 +268,9 @@ def sync_jpmc_jobs(
         metadata = extract_job_metadata(desc_text, filename=None)
         inferred_family = metadata.get("role_family") or "Family B: Analytics and Automation Solutions"
 
+        posted_date_raw = job_summary.get("PostedDate") or (detail.get("ExternalPostedStartDate") if 'detail' in locals() and detail else None)
+        job_posted_date = str(posted_date_raw)[:10] if posted_date_raw else today_str
+
         next_code = get_next_job_code(db)
 
         new_job = JobListing(
@@ -272,7 +280,7 @@ def sync_jpmc_jobs(
             source_job_id=job_id,
             location="Goregaon, Mumbai",
             source_url=public_url,
-            capture_date=today_str,
+            capture_date=job_posted_date,
             role_family=inferred_family,
             status="Discovered",  # Discovered ensures N=10 available count is unchanged
             original_description=desc_text,

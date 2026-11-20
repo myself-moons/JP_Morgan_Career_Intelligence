@@ -488,6 +488,9 @@ export const ResumeWorkspace: React.FC = () => {
                   </div>
                   <p className="text-xs text-slate-400">
                     {targetJob.role_family} • Location: <span className="text-slate-300">{targetJob.location}</span>
+                    {targetJob.capture_date && (
+                      <span> • Posted: <span className="text-slate-200 font-medium">{targetJob.capture_date}</span></span>
+                    )}
                   </p>
                 </div>
 
