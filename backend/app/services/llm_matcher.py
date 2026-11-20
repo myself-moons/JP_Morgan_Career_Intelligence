@@ -294,6 +294,7 @@ def rank_top_jobs_for_resume(
                 score=evaluation.overall_score,
                 matched_skills=evaluation.verified_matched_skills[:5],
                 readiness_verdict=evaluation.readiness_verdict,
+                capture_date=job.capture_date,
             )
         )
 

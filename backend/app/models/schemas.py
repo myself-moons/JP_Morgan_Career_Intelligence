@@ -164,6 +164,7 @@ class TopJobMatch(BaseModel):
     score: int
     matched_skills: List[str]
     readiness_verdict: str
+    capture_date: Optional[str] = None
 
 
 class TopJobMatchesResponse(BaseModel):

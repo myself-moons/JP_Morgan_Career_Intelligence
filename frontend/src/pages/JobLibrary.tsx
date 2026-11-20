@@ -562,6 +562,12 @@ export const JobLibrary: React.FC = () => {
                         </span>
                         <span>&bull;</span>
                         <span>{job.company_name}</span>
+                        {job.capture_date && (
+                          <>
+                            <span>&bull;</span>
+                            <span className="text-slate-500 font-medium">Posted: {job.capture_date}</span>
+                          </>
+                        )}
                         {job.context_note && (
                           <>
                             <span>&bull;</span>
@@ -1065,6 +1071,12 @@ export const JobLibrary: React.FC = () => {
                   <span>{selectedJob.company_name}</span>
                   <span>&bull;</span>
                   <span>{selectedJob.location}</span>
+                  {selectedJob.capture_date && (
+                    <>
+                      <span>&bull;</span>
+                      <span className="text-slate-700 font-semibold">Posted: {selectedJob.capture_date}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <button

@@ -72,7 +72,7 @@ def build_markdown_summary(
             lines.extend([
                 f"#### {idx}. [{job.title}]({url})",
                 f"- **Requisition ID:** `{req_id}` | **Role Family:** {job.role_family.split(':')[0]}",
-                f"- **Location:** {job.location}",
+                f"- **Location:** {job.location} | **Posted / Captured Date:** `{job.capture_date or 'Recent'}`",
                 f"- **Match Fit Score:** **`{score}%`** ({badge}) | **Verdict:** `{verdict}`",
                 f"- **AI Reasoning:** {eval_res.summary_reasoning}",
                 f"- **Verified Competencies ({len(eval_res.verified_matched_skills)}):** " + (", ".join(eval_res.verified_matched_skills[:8]) if eval_res.verified_matched_skills else "None identified"),
@@ -120,7 +120,7 @@ def build_html_email(
                         {job.title}
                     </h3>
                     <p style="margin:0;font-size:12px;color:#64748b;">
-                        {job.role_family.split(':')[0]} &bull; {job.location}
+                        {job.role_family.split(':')[0]} &bull; {job.location} &bull; <strong>Posted:</strong> {job.capture_date or 'Recent'}
                     </p>
                 </div>
                 <div style="text-align:right;">

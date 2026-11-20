@@ -153,6 +153,7 @@ export interface TopJobMatch {
   score: number;
   matched_skills: string[];
   readiness_verdict: string;
+  capture_date?: string | null;
 }
 
 export interface TopJobMatchesResponse {
