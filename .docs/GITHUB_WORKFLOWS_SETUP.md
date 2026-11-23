@@ -8,8 +8,8 @@ This guide explains how to configure and run the autonomous GitHub Actions workf
 
 | Workflow | File | Trigger | Purpose |
 | :--- | :--- | :--- | :--- |
-| **CI - Test & Build** | `.github/workflows/ci.yml` | `push`, `pull_request`, manual | Runs backend pytest suite (25 tests) and frontend Vite TypeScript build. |
-| **JPMC Daily Job Watcher** | `.github/workflows/jpmc_daily_job_sync.yml` | Daily at 03:00 UTC (08:30 IST) or manual | Synchronizes live JPMC Mumbai/Goregaon postings, matches against candidate profile, and dispatches email briefing. |
+| **CI - Test & Build** | `.github/workflows/ci.yml` | `push`, `pull_request`, manual | Runs complete backend pytest suite (**35 tests**) and frontend Vite TypeScript production build. |
+| **JPMC Daily Job Watcher** | `.github/workflows/jpmc_daily_job_sync.yml` | Daily at 03:00 UTC (08:30 IST) or manual | Synchronizes live JPMC Mumbai/Goregaon postings from Oracle Cloud (`CX_1001`), captures posting dates, matches against candidate profile, ranks top fits, and dispatches executive HTML email briefings. |
 
 ---
 
@@ -59,3 +59,15 @@ You don't have to wait for the daily schedule (08:30 IST) to test:
    - `dry_run`: Check to preview matching without modifying database state.
 5. Click the green **Run workflow** button.
 6. When complete, inspect the **Job Summary** to view the rendered Markdown briefing directly in GitHub!
+
+---
+
+## 📊 Daily Email Briefing Features
+
+The automated daily email contains:
+- **Total Synchronized Count & Filtered Roles:** Count of live JPMC Mumbai/Goregaon postings retrieved and categorized.
+- **Posting Date:** Precise job publication date (`PostedDate`) extracted from Oracle Cloud.
+- **Explainable Match Score:** Ranked 0–100% fit score based on the candidate's active resume.
+- **Top Matched Competencies:** Specific required skills verified between the resume and the job listing.
+- **Identified Gaps:** Critical missing technical or domain qualifications for targeted learning.
+- **Direct Application Links:** One-click links to the official JPMorgan Chase careers portal.

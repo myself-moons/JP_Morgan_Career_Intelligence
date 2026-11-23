@@ -4,7 +4,7 @@
 
 | **Document status** | Baseline requirements specification (revised for local-first MVP & taxonomy alignment) |
 | --- | --- |
-| **Version / date** | 1.2 / 17 November 2026 |
+| **Version / date** | 2.0 / 23 November 2026 |
 | **Project scope** | JPMorgan Chase roles initially; local-first MVP (Phase 1) |
 
 ---
@@ -16,6 +16,7 @@
 | 1.0 | 17 Nov 2026 | Baseline Team | Initial draft baseline for JCI project development. |
 | 1.1 | 17 Nov 2026 | Documentation Review | Aligned documentation structure and initial requirements cross-references. |
 | 1.2 | 17 Nov 2026 | JCI Plan Review & Architecture Alignment | **Resolved UI framework conflict:** Corrected Section 2.3 Table 3 from Streamlit to React + FastAPI.<br>**Clarified MVP vs. Cloud scope:** Explicitly established Phase 1 as a 100% local-first application (React + FastAPI + SQLite). Deferred Firebase Hosting, Realtime Database, and cloud deployments to Phase 2 (post-M7).<br>**Sample size & status alignment:** Clarified dataset as 11 captured listings (10 analysable JDs, 1 with status `JD unavailable`).<br>**Schema enhancement:** Added `role_family` (A, B, C) and `status` (`Available`, `JD unavailable`, `Stale`, `Archived`) to the `Job listing` entity.<br>**Education vs. skill gap test:** Added explicit requirement that degree/licensure prerequisites must be evaluated as formal education gaps, not technical skill gaps.<br>**Profile seed:** Added requirement to seed the profile with the CardLyze project and its explicit contribution split per FR-19 before Milestone M5. |
+| 2.0 | 23 Nov 2026 | Architecture & Implementation Review | **Taxonomy & Analytics Delivery:** Formalized data entity models for `Skill`, `SkillAlias`, `JobSkill`, `ResumeDocument`, and `LLMEvaluation`. Reflected delivery of Canonical Skill Taxonomy (M3) and Comparative Analytics Matrix (M4).<br>**Hybrid Intelligence & CI:** Documented zero-RAM cloud LLM adapter architecture, live Oracle Cloud sync (`job_sync.py`), and 35 automated pytest tests passing in CI. |
 
 ---
 

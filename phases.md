@@ -13,11 +13,11 @@ flowchart TD
     subgraph Phase1["Phase 1: Local-First MVP & Hybrid Intelligence (Milestones M0 to M7)"]
         M0["M0: Foundation & Setup ✅<br>(Vite/React + FastAPI + Virtualenv)"] --> M1["M1: Database & Live Oracle Sync ✅<br>(SQLite + Job Library + Oracle CX_1001 Sync)"]
         M1 --> M2["M2: JD Processing & Extraction ✅<br>(Text Normalization + Section Parser + Metadata)"]
-        M2 --> M3["M3: Taxonomy, Aliases & Disambiguation 🔄<br>(30+ Canonical Skills + Offline Engine + UI Review)"]
-        M3 --> M4["M4: Comparative Analytics 🔄<br>(Coverage % across N=10 + Role Families A, B, C)"]
+        M2 --> M3["M3: Taxonomy, Aliases & Disambiguation ✅<br>(35+ Canonical Skills + Offline Engine + UI Review)"]
+        M3 --> M4["M4: Comparative Analytics ✅<br>(Coverage % across N=10 + Role Families + Matrix Grid)"]
         M4 --> M5["M5: Resume Workspace, LaTeX & Explainable AI ✅<br>(Multi-Resume + LaTeX Editor + Gemini Bar Raiser + SHA-256 Cache)"]
         M5 --> M6["M6: Learning Intelligence ⏳<br>(Resource Catalogue + Gap Mapping + Progress Tracker)"]
-        M6 --> M7["M7: Verification & Local Delivery ✅<br>(25 Pytest Tests + CI Pipeline + Exports & Backups)"]
+        M6 --> M7["M7: Verification & Local Delivery ✅<br>(35 Pytest Tests + CI Pipeline + Exports & Backups)"]
     end
 
     subgraph Phase1_Cloud["Cloud Automation (Pulled Forward to Phase 1) ✅"]
@@ -57,7 +57,7 @@ Over the course of implementation, user requirements and practical constraints d
 | **Matching Engine** | Simple keyword intersection count. | **Explainable AI Bar Raiser (Gemini Flash)** with 3-dimensional rubric (Technical 45%, Domain Governance 35%, Seniority 20%), detailed rationale, verified competencies, and critical gaps + **Offline Taxonomy Fallback**. | **Completed & Live** |
 | **API Quota Safety** | Basic error handling if key missing. | SHA-256 fingerprint caching in SQLite (`llm_evaluations`), manual user-only triggers, and offline ranking for leaderboard and daily alerts. | **Completed & Live** |
 | **Scheduled Automation** | Unspecified / planned for Phase 2. | **GitHub Actions Cron Pipeline** running daily at 08:30 IST, synchronizing live jobs, ranking against active profile, compiling Markdown digests, and sending executive HTML emails via Gmail SMTP. | **Completed & Live** |
-| **Continuous Integration** | Local pytest runs only. | Automated `.github/workflows/ci.yml` running 25 backend pytest tests and Vite/TypeScript production build on every commit/PR. | **Completed & Live** |
+| **Continuous Integration** | Local pytest runs only. | Automated `.github/workflows/ci.yml` running 35 backend pytest tests and Vite/TypeScript production build on every commit/PR. | **Completed & Live** |
 
 ---
 
@@ -99,24 +99,32 @@ Over the course of implementation, user requirements and practical constraints d
 ---
 
 ### Phase 1.3 (Milestone M3): Canonical Skill Taxonomy, Alias Engine & Human Review
-- **Status:** **Partially Completed (70%)**
+- **Status:** **Completed (100%)**
 - **Deliverables Achieved:**
-  - Curated canonical taxonomy across 30+ enterprise banking and technical competencies (Python, SQL, Alteryx, Spark, AWS, Collibra, Data Governance, BCBS 239, Lineage, Risk Controls).
-  - Deterministic regex word-boundary alias matcher with graceful fallback.
-  - Free-tier LLM semantic mapping integration in `backend/app/services/llm_matcher.py`.
-- **Remaining for Completion:**
-  - Dedicated interactive Skill Review Screen UI (`ReviewScreen.tsx`) allowing users to manually edit, accept, or reject individual extracted skills and add aliases directly to the taxonomy database.
+  - Curated canonical taxonomy across 35+ enterprise banking, data, analytics, and technical competencies (Python, SQL, Alteryx, Spark, AWS, Snowflake, Collibra, Data Governance, BCBS 239, Lineage, Credit Risk, Treasury & Liquidity, Wholesale Payments, Compliance & AML).
+  - Deterministic regex word-boundary alias matcher with 60+ curated alias mappings.
+  - Verbatim evidence snippet extraction capturing surrounding context and classifying requirements as Required vs. Preferred.
+  - Dedicated interactive **Skill Analysis & Human Review Screen (`frontend/src/pages/SkillAnalysis.tsx`)**:
+    - Review and approve (`Accepted`), reject (`Rejected`), reclassify requirement type, or edit skill mappings directly in the UI.
+    - Add custom aliases to canonical skills with immediate SQLite persistence.
+  - Free-tier Gemini Flash AI semantic disambiguation (`backend/app/services/taxonomy_service.py`) for ambiguous skill phrases (FR-42, TC-22) with deterministic offline fallback.
+  - Tests: `test_taxonomy_seeded`, `test_list_skills_api`, `test_create_skill_and_alias`, `test_tc08_deterministic_skill_extraction`, `test_tc10_tc22_ai_disambiguation`, `test_tc13_review_and_edit_job_skill`.
 
 ---
 
-### Phase 1.4 (Milestone M4): Comparative Analytics Engine & Dashboard
-- **Status:** **Partially Completed (60%)**
+### Phase 1.4 (Milestone M4): Comparative Analytics Engine & Cross-Role Matrix
+- **Status:** **Completed (100%)**
 - **Deliverables Achieved:**
-  - Dashboard KPIs: Total jobs, analysable jobs ($N=10$), unavailable count, and role family distribution.
-  - Top 5 Best-Fit Roles leaderboard ranked against the active candidate profile.
-- **Remaining for Completion:**
-  - Cross-role skill coverage matrix table: rows = canonical skills, columns = role families (A, B, C) or jobs, cells = required vs. preferred indicators.
-  - Frequency calculation: $\text{Coverage}(\%) = (\text{Distinct Jobs Mentioning Skill} / N) \times 100$.
+  - Comparative analytics service (`backend/app/services/analytics_service.py`):
+    - Distinct-job coverage calculations strictly enforcing active denominator ($N=10$, excluding unavailable JDs per BR-06) and single-count constraint (BR-07, TC-11).
+    - Role Family filtering (Family A, B, C per BR-05, TC-12) recalculating $N$ and coverage % dynamically.
+    - Cross-Role Matrix view (`/api/analytics/matrix`, FR-16) mapping skills across all $N=10$ jobs with required vs. preferred split.
+    - Click-to-inspect verbatim evidence modal (`/api/analytics/skills/{id}/evidence`, FR-15, FR-25).
+  - Interactive **Analytics Dashboard (`frontend/src/pages/Dashboard.tsx`)**:
+    - Coverage ranking table with dynamic progress bars and Required/Preferred count breakdown.
+    - Cross-Role Matrix grid with color-coded status badges and role family tabs.
+    - Top 5 Best-Fit Roles leaderboard ranked against the active candidate profile.
+  - Tests: `test_tc11_distinct_job_coverage_calculation`, `test_tc12_role_family_filtering`, `test_cross_role_matrix_structure`, `test_skill_evidence_snippets`.
 
 ---
 
@@ -143,9 +151,9 @@ Over the course of implementation, user requirements and practical constraints d
 ---
 
 ### Phase 1.7 (Milestone M7): Validation Test Suite, Exports & Local Delivery
-- **Status:** **Substantially Completed (90%)**
+- **Status:** **Substantially Completed (95%)**
 - **Deliverables Achieved:**
-  - Automated test suite expanded to **25 Pytest test cases** covering health, ingestion, sync, parsing, resumes, and explainable matching.
+  - Automated test suite expanded to **35 Pytest test cases** covering health, ingestion, sync, parsing, resumes, taxonomy, and analytics.
   - Continuous Integration workflow (`.github/workflows/ci.yml`) passing on GitHub Actions.
   - Memory budget verified: application runs in <150 MB RAM locally.
 - **Remaining for Completion:**

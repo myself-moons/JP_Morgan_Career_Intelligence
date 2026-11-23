@@ -4,7 +4,7 @@
 
 | **Document status** | Baseline project overview (revised for local-first MVP & taxonomy alignment) |
 | --- | --- |
-| **Version / date** | 1.2 / 17 November 2026 |
+| **Version / date** | 2.0 / 23 November 2026 |
 | **Project scope** | JPMorgan Chase roles initially; local-first MVP (Phase 1) |
 
 ---
@@ -16,6 +16,7 @@
 | 1.0 | 17 Nov 2026 | Baseline Team | Initial draft baseline for project development. |
 | 1.1 | 17 Nov 2026 | Documentation Review | Structural review and consistency cross-check. |
 | 1.2 | 17 Nov 2026 | JCI Plan Review & Architecture Alignment | **Local-First MVP vs. Cloud Phase 2:** Formally defined two-phase roadmap. Phase 1 (Milestones M0–M7) delivers a 100% local-first application using React, Python FastAPI, and SQLite. Deferred Firebase Hosting, Realtime Database, and cloud hosting to Phase 2 (post-M7).<br>**UI alignment:** Confirmed React frontend with FastAPI backend across all specifications.<br>**Dataset & Status Definition:** Clarified initial collection of 11 JPMorgan Chase roles: 10 analysable JDs with full text and 1 record with status `JD unavailable` (*JPMorgan Data Governance – Senior Associate*).<br>**Baseline Taxonomy & Role Families:** Established three distinct functional role families: Family A (Data Management, Quality & Governance), Family B (Analytics, Automation & AI), and Family C (Finance, Credit & Operations).<br>**Realistic Target Priority:** Adjusted priority ranking based on deep JD analysis: (1) Applied AI & Data Science (1–5 yrs), (2) Data Quality Business Analytics (5+ yrs), (3) CAO Data Management (3+ yrs). Corrected title-only misconceptions (e.g. Data Analytics is FP&A; CR Portfolio Analytics is Commercial Real Estate credit risk).<br>**Expanded Skill Taxonomy:** Added finance/credit domain requirements (FP&A, GAAP/IFRS, credit analysis) and enterprise tools (Alteryx, Databricks, Snowflake, Informatica, Collibra) alongside core technical skills.<br>**CardLyze Profile Seed (M5):** Added requirement to pre-seed the user profile with the CardLyze project and its explicit contribution split (independent requirements, data dictionaries, EDA vs. AI-assisted codebase implementation) per FR-19 before matching tests.<br>**Strategic Learning Order:** Defined the common core foundation (SQL depth, Python/Pandas, DQ/reconciliation, BI dashboarding, AI-assisted analytics) followed by track-specific specialization. |
+| 2.0 | 23 Nov 2026 | Architecture & Implementation Review | **Taxonomy & Comparative Analytics Delivery:** Documented completion of M3 (Canonical Skill Taxonomy, Alias Engine, Human Review Workspace) and M4 (Comparative Analytics Engine, Cross-Role Matrix, Evidence Snippet Inspector).<br>**Live Job Sync & Automation:** Added live Oracle Cloud CX integration, multi-resume workspace with LaTeX compilation, daily GitHub Actions watcher with email alerts, and 35 automated pytest tests passing in CI. |
 
 ---
 
