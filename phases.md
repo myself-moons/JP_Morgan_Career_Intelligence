@@ -180,28 +180,28 @@ Over the course of implementation, user requirements and practical constraints d
 | **M0** | Scaffolding & Setup | Day 1 | 100% | ✅ **Complete** | Maintained in CI |
 | **M1** | Database & Ingestion | Days 2–3 | 100% | ✅ **Complete** | Live Oracle Sync operational |
 | **M2** | JD Parsing & Normalization | Days 4–5 | 100% | ✅ **Complete** | Sections & metadata extracted |
-| **M3** | Taxonomy & Human Review | Days 6–7 | 70% | 🔄 **In Progress** | Build interactive Review Screen UI |
-| **M4** | Comparative Analytics | Days 8–9 | 60% | 🔄 **In Progress** | Implement cross-role skill matrix |
+| **M3** | Taxonomy & Human Review | Days 6–7 | 100% | ✅ **Complete** | Full Review UI & AI Disambiguation live |
+| **M4** | Comparative Analytics | Days 8–9 | 100% | ✅ **Complete** | Coverage table & Cross-Role Matrix live |
 | **M5** | Multi-Resume & Matcher | Days 10–12 | 85% | ✅ **Substantial** | Seed CardLyze evidence attribution |
 | **M6** | Learning Intelligence | Days 13–14 | 0% | ⏳ **Upcoming** | Map M5 gaps to learning catalogue |
-| **M7** | Verification & Delivery | Day 15 | 90% | ✅ **Substantial** | Add CSV/Excel export & backup script |
+| **M7** | Verification & Delivery | Day 15 | 95% | ✅ **Substantial** | 35 Pytest tests passing, CI pipeline live |
 | **CI/CD** | Cloud Workflows & Alerts | Phase 2 | 100% | ✅ **Complete Early** | Daily cron & CI live in GitHub Actions |
 
 ---
 
 ## 6. Readiness Assessment: Are We Ready to Move to the Next Phase?
 
-### Verdict: **YES — Fully Ready & Architecturally Sound**
+### Verdict: **YES — Milestones M3 & M4 Fully Delivered**
 
-1. **Core Foundation is Robust:**
-   - Database persistence, schema migrations, and real-time synchronization with JPMorgan Chase careers endpoints are fully proven and tested.
-   - All 25 backend tests pass cleanly in 15 seconds.
-   - Frontend TypeScript compiles with 0 errors.
-2. **Heavy Lifting Already Pulled Forward:**
-   - Multi-resume ingestion, in-app LaTeX editing, PDF preview, and Gemini Flash Explainable AI were delivered ahead of schedule in Milestone M5.
-   - Cloud automation (CI pipeline + scheduled daily watcher + HTML email notifications) is already operational on GitHub Actions for free.
-3. **Immediate Recommended Next Sprint:**
-   - **Sprint Focus:** **Milestones M3 & M4 (Interactive Skill Taxonomy Review & Comparative Matrix)**:
-     1. Build the interactive Skill Review Screen UI (`ReviewScreen.tsx`) where users can inspect extracted skills, approve/reject alias links, and test semantic disambiguation.
-     2. Build the cross-role comparative analytics matrix table on the Dashboard showing skill frequency across all $N=10$ baseline roles and Role Families A, B, and C.
-   - Following M3/M4, proceed directly to **Milestone M6 (Learning Intelligence)** to map the critical gaps identified by the Explainable AI engine to actionable courses and certifications.
+1. **Milestone M3 (Canonical Skill Taxonomy, Alias Engine & Human Review)**:
+   - 35+ enterprise canonical skills seeded across 5 categories with unique alias maps.
+   - Deterministic extraction attaching exact sentence evidence snippets and classifying Required vs. Preferred.
+   - Full human-in-the-loop review workspace (`frontend/src/pages/SkillAnalysis.tsx`) allowing users to approve (`Accepted`), reject (`Rejected`), reclassify, or manually link skills.
+   - AI-assisted semantic disambiguation (FR-42, TC-22) powered by Gemini Flash with offline fallback.
+2. **Milestone M4 (Comparative Analytics Engine & Cross-Role Matrix)**:
+   - Coverage calculations strictly enforcing active denominator ($N=10$, excluding unavailable JDs) and single-count constraint (BR-06, BR-07, TC-11).
+   - Role Family filtering (Family A, B, C) recalculating $N$ and coverage % dynamically (TC-12).
+   - Cross-Role Matrix view (FR-16) mapping skills across all $N=10$ jobs.
+   - Click-to-inspect verbatim evidence modal (FR-15, FR-25).
+3. **Immediate Recommended Next Sprint**:
+   - **Sprint Focus:** **Milestone M5-CardLyze (Profile Evidence Attribution & Unsupported Skill Audit)** & **Milestone M6 (Learning Intelligence & Gap Tracker)**.

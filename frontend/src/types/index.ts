@@ -77,6 +77,93 @@ export interface NextCodeResponse {
   next_code: string;
 }
 
+export interface TaxonomySkill {
+  id: number;
+  canonical_name: string;
+  category: string;
+  description?: string | null;
+  aliases: string[];
+  job_count: number;
+}
+
+export interface JobSkillRecord {
+  id: number;
+  job_id: number;
+  skill_id: number;
+  canonical_name: string;
+  category: string;
+  matched_alias?: string | null;
+  requirement_type: 'Required' | 'Preferred' | 'Unspecified';
+  extraction_method: string;
+  review_status: 'Proposed' | 'Accepted' | 'Rejected' | 'Edited';
+  evidence_snippet?: string | null;
+  confidence: number;
+}
+
+export interface DisambiguateResult {
+  phrase: string;
+  suggested_canonical_name: string;
+  suggested_skill_id?: number | null;
+  confidence: number;
+  rationale: string;
+  is_llm_powered: boolean;
+}
+
+export interface SkillCoverageItem {
+  skill_id: number;
+  canonical_name: string;
+  category: string;
+  distinct_job_count: number;
+  coverage_percentage: number;
+  required_count: number;
+  preferred_count: number;
+  family_a_count: number;
+  family_b_count: number;
+  family_c_count: number;
+}
+
+export interface CoverageResponse {
+  total_jobs: number;
+  analysable_count: number;
+  role_family_counts: Record<string, number>;
+  active_family_filter?: string | null;
+  skills: SkillCoverageItem[];
+}
+
+export interface MatrixJobInfo {
+  job_id: number;
+  external_job_id?: string | null;
+  title: string;
+  role_family: string;
+  status: string;
+}
+
+export interface CrossRoleMatrixResponse {
+  total_analysable_jobs: number;
+  family_counts: Record<string, number>;
+  jobs: MatrixJobInfo[];
+  skills: SkillCoverageItem[];
+  matrix: Record<string, Record<string, string>>;
+}
+
+export interface SkillEvidenceItem {
+  job_id: number;
+  job_title: string;
+  external_job_id?: string | null;
+  role_family: string;
+  requirement_type: string;
+  review_status: string;
+  evidence_snippet: string;
+}
+
+export interface SkillEvidenceResponse {
+  skill_id: number;
+  canonical_name: string;
+  category: string;
+  distinct_jobs_count: number;
+  items: SkillEvidenceItem[];
+}
+
 export interface Skill {
   id: string;
   canonical_name: string;
