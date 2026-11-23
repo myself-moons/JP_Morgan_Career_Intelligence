@@ -15,9 +15,12 @@ from app.models.schemas import (
     ParsedFields,
     ParseTextRequest,
     NextCodeResponse,
+    SyncRequest,
+    SyncResponse,
 )
 from app.services.document_parser import parse_document
 from app.services.jd_parser import extract_job_metadata, parse_job_sections
+from app.services.job_sync import sync_jpmc_jobs
 
 router = APIRouter(prefix="/jobs", tags=["Job Ingestion & Library"])
 
@@ -53,6 +56,7 @@ def build_job_out(job: JobListing) -> JobOut:
         company_name=job.company.name if job.company else "Unknown",
         title=job.title,
         external_job_id=job.external_job_id,
+        source_job_id=getattr(job, "source_job_id", None),
         location=job.location,
         source_url=job.source_url,
         capture_date=job.capture_date,
@@ -349,3 +353,21 @@ def seed_jobs(db: Session = Depends(get_db)):
     from app.core.seed import seed_baseline_jobs
     count = seed_baseline_jobs(db)
     return {"status": "success", "seeded_count": count}
+
+
+@router.post("/sync", response_model=SyncResponse, summary="Sync live job requisitions from JPMorgan Chase careers API")
+def sync_jobs(payload: Optional[SyncRequest] = None, db: Session = Depends(get_db)):
+    """Pulls live job postings from Oracle Cloud CE site CX_1001 for Mumbai/Goregaon."""
+    limit = payload.limit if payload else 25
+    dry_run = payload.dry_run if payload else False
+    result = sync_jpmc_jobs(db, limit=limit, dry_run=dry_run)
+    return SyncResponse(
+        total_found=result["total_found"],
+        added=result["added"],
+        updated=result["updated"],
+        unchanged=result["unchanged"],
+        stale=result["stale"],
+        jobs=[build_job_out(j) for j in result["jobs"]],
+        message=result["message"],
+    )
+

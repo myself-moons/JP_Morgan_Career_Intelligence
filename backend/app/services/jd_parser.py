@@ -70,6 +70,22 @@ def _find_headings(text: str) -> List[Tuple[int, int, str, str]]:
                 headings.append((m.start(), m.end(), "qualifications", m.group(0).strip()))
 
     headings.sort(key=lambda x: x[0])
+
+    # Quirk handling: in some JPMC JDs the preferred section is headed "Required qualifications" a second time.
+    # If a subsequent qualifications heading appears without an explicit preferred section, treat it as preferred.
+    has_preferred = any(h[2] == "preferred_qualifications" for h in headings)
+    if not has_preferred:
+        qual_count = 0
+        new_headings = []
+        for start, end, sec_type, text_heading in headings:
+            if sec_type == "qualifications":
+                qual_count += 1
+                if qual_count > 1:
+                    new_headings.append((start, end, "preferred_qualifications", text_heading))
+                    continue
+            new_headings.append((start, end, sec_type, text_heading))
+        headings = new_headings
+
     return headings
 
 

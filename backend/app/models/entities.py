@@ -37,6 +37,7 @@ class JobListing(Base):
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(255), nullable=False, index=True)
     external_job_id = Column(String(100), nullable=True, index=True)
+    source_job_id = Column(String(100), nullable=True, index=True)
     location = Column(String(255), nullable=False, default="Goregaon, Mumbai")
     source_url = Column(Text, nullable=True)
     capture_date = Column(String(50), nullable=False, default="2026-11-17")
@@ -62,3 +63,98 @@ class JobListing(Base):
 
     def __repr__(self):
         return f"<JobListing(id={self.id}, title='{self.title}', family='{self.role_family}', status='{self.status}')>"
+
+
+class ResumeDocument(Base):
+    __tablename__ = "resumes"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(255), nullable=False, index=True)
+    pdf_filename = Column(String(255), nullable=True)
+    latex_filename = Column(String(255), nullable=True)
+    raw_text = Column(Text, nullable=True)
+    latex_source = Column(Text, nullable=True)
+    is_active = Column(Integer, default=0, nullable=False, index=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<ResumeDocument(id={self.id}, name='{self.name}', active={self.is_active})>"
+
+
+class LLMEvaluation(Base):
+    __tablename__ = "llm_evaluations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    resume_id = Column(Integer, ForeignKey("resumes.id", ondelete="CASCADE"), nullable=False, index=True)
+    job_id = Column(Integer, ForeignKey("job_listings.id", ondelete="CASCADE"), nullable=False, index=True)
+    content_hash = Column(String(64), nullable=False, index=True)
+    evaluation_json = Column(Text, nullable=False)
+    is_llm_powered = Column(Integer, default=1, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<LLMEvaluation(id={self.id}, resume_id={self.resume_id}, job_id={self.job_id})>"
+
+
+class Skill(Base):
+    __tablename__ = "skills"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    canonical_name = Column(String(100), unique=True, index=True, nullable=False)
+    category = Column(String(100), index=True, nullable=False, default="Technical")
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    # Relationships
+    aliases = relationship("SkillAlias", back_populates="skill", cascade="all, delete-orphan")
+    job_skills = relationship("JobSkill", back_populates="skill", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Skill(id={self.id}, name='{self.canonical_name}', category='{self.category}')>"
+
+
+class SkillAlias(Base):
+    __tablename__ = "skill_aliases"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    alias_text = Column(String(100), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    # Relationships
+    skill = relationship("Skill", back_populates="aliases")
+
+    def __repr__(self):
+        return f"<SkillAlias(id={self.id}, alias='{self.alias_text}')>"
+
+
+class JobSkill(Base):
+    __tablename__ = "job_skills"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    job_id = Column(Integer, ForeignKey("job_listings.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    matched_alias = Column(String(100), nullable=True)
+    requirement_type = Column(String(50), nullable=False, default="Required", index=True)  # Required, Preferred, Unspecified
+    extraction_method = Column(String(50), nullable=False, default="dictionary")  # dictionary, contextual_rule, manual
+    review_status = Column(String(50), nullable=False, default="Proposed", index=True)  # Proposed, Accepted, Rejected, Edited
+    evidence_snippet = Column(Text, nullable=True)
+    confidence = Column(Integer, default=90, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("job_id", "skill_id", name="uq_job_skill"),
+    )
+
+    # Relationships
+    job = relationship("JobListing", backref="extracted_skills")
+    skill = relationship("Skill", back_populates="job_skills")
+
+    def __repr__(self):
+        return f"<JobSkill(id={self.id}, job_id={self.job_id}, skill_id={self.skill_id}, status='{self.review_status}')>"
+
+
+

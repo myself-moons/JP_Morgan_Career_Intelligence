@@ -5,8 +5,13 @@ from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal, init_db
 from app.models.entities import JobListing
 from app.core.seed import seed_baseline_jobs
+from app.services.resume_service import seed_resumes
 from app.api.health import router as health_router
 from app.api.jobs import router as jobs_router
+from app.api.resumes import router as resumes_router
+from app.api.taxonomy import router as taxonomy_router
+from app.api.analytics import router as analytics_router
+from app.services.taxonomy_service import seed_taxonomy_if_empty
 
 
 @asynccontextmanager
@@ -24,6 +29,10 @@ async def lifespan(app: FastAPI):
         count = db.query(JobListing).count()
         if count == 0:
             seed_baseline_jobs(db)
+        # Ensure resumes from resumes/ directory are indexed
+        seed_resumes(db)
+        # Ensure canonical taxonomy and aliases are seeded
+        seed_taxonomy_if_empty(db)
     finally:
         db.close()
 
@@ -53,6 +62,12 @@ app.include_router(health_router, prefix=settings.API_PREFIX)
 app.include_router(health_router)
 app.include_router(jobs_router, prefix=settings.API_PREFIX)
 app.include_router(jobs_router)
+app.include_router(resumes_router, prefix=settings.API_PREFIX)
+app.include_router(resumes_router)
+app.include_router(taxonomy_router, prefix=settings.API_PREFIX)
+app.include_router(taxonomy_router)
+app.include_router(analytics_router, prefix=settings.API_PREFIX)
+app.include_router(analytics_router)
 
 
 @app.get("/", summary="Root Welcome Endpoint")

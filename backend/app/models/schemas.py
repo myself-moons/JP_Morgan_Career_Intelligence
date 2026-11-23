@@ -7,6 +7,7 @@ class JobBase(BaseModel):
     title: str = Field(..., min_length=2, description="Job title")
     company_name: str = Field(default="JPMorgan Chase", description="Company or institution name")
     external_job_id: Optional[str] = Field(None, description="External requisition or job ID")
+    source_job_id: Optional[str] = Field(None, description="Oracle Cloud Requisition ID")
     location: str = Field(default="Goregaon, Mumbai", description="Job location")
     source_url: Optional[str] = Field(None, description="Posting URL")
     capture_date: str = Field(default="2026-11-17", description="Capture date (YYYY-MM-DD)")
@@ -47,6 +48,7 @@ class JobOut(BaseModel):
     company_name: str
     title: str
     external_job_id: Optional[str] = None
+    source_job_id: Optional[str] = None
     location: str
     source_url: Optional[str] = None
     capture_date: str
@@ -102,3 +104,199 @@ class ParseTextRequest(BaseModel):
 
 class NextCodeResponse(BaseModel):
     next_code: str = Field(..., description="Auto-incremented numerical requisition code, e.g. JB-1")
+
+
+class SyncRequest(BaseModel):
+    limit: int = Field(default=25, ge=1, le=100)
+    dry_run: bool = False
+
+
+class SyncResponse(BaseModel):
+    total_found: int
+    added: int
+    updated: int
+    unchanged: int
+    stale: int
+    jobs: List[JobOut]
+    message: str
+
+
+class ResumeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    pdf_filename: Optional[str] = None
+    latex_filename: Optional[str] = None
+    raw_text: Optional[str] = None
+    latex_source: Optional[str] = None
+    is_active: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class ResumeLatexUpdate(BaseModel):
+    latex_source: str = Field(..., description="Updated LaTeX source code")
+
+
+class DimensionDetail(BaseModel):
+    score: int = Field(..., ge=0, le=100)
+    reasoning: str
+
+
+class ExplainableMatchResponse(BaseModel):
+    overall_score: int = Field(..., ge=0, le=100)
+    readiness_verdict: str
+    summary_reasoning: str
+    dimensions: Dict[str, DimensionDetail] = Field(default_factory=dict)
+    verified_matched_skills: List[str] = Field(default_factory=list)
+    critical_missing_skills: List[str] = Field(default_factory=list)
+    actionable_latex_recommendations: List[str] = Field(default_factory=list)
+    is_llm_powered: bool = False
+    is_cached: bool = False
+
+
+class TopJobMatch(BaseModel):
+    job_id: int
+    title: str
+    external_job_id: Optional[str] = None
+    role_family: str
+    score: int
+    matched_skills: List[str]
+    readiness_verdict: str
+    capture_date: Optional[str] = None
+
+
+class TopJobMatchesResponse(BaseModel):
+    active_resume_id: int
+    active_resume_name: str
+    top_matches: List[TopJobMatch]
+
+
+# --- M3: Taxonomy & Skill Review Schemas ---
+
+class SkillAliasOut(BaseModel):
+    id: int
+    alias_text: str
+
+
+class SkillCreate(BaseModel):
+    canonical_name: str
+    category: str = "Technical"
+    description: Optional[str] = None
+    aliases: List[str] = Field(default_factory=list)
+
+
+class SkillOut(BaseModel):
+    id: int
+    canonical_name: str
+    category: str
+    description: Optional[str] = None
+    aliases: List[str] = Field(default_factory=list)
+    job_count: int = 0
+
+
+class AddAliasRequest(BaseModel):
+    alias_text: str
+
+
+class JobSkillOut(BaseModel):
+    id: int
+    job_id: int
+    skill_id: int
+    canonical_name: str
+    category: str
+    matched_alias: Optional[str] = None
+    requirement_type: str  # Required, Preferred, Unspecified
+    extraction_method: str
+    review_status: str  # Proposed, Accepted, Rejected, Edited
+    evidence_snippet: Optional[str] = None
+    confidence: int
+
+
+class JobSkillUpdate(BaseModel):
+    requirement_type: Optional[str] = None
+    review_status: Optional[str] = None
+    evidence_snippet: Optional[str] = None
+    skill_id: Optional[int] = None
+
+
+class JobSkillCreate(BaseModel):
+    skill_id: int
+    requirement_type: str = "Required"
+    evidence_snippet: Optional[str] = None
+
+
+class DisambiguateRequest(BaseModel):
+    phrase: str
+    context: Optional[str] = None
+
+
+class DisambiguateResponse(BaseModel):
+    phrase: str
+    suggested_canonical_name: str
+    suggested_skill_id: Optional[int] = None
+    confidence: int
+    rationale: str
+    is_llm_powered: bool
+
+
+# --- M4: Comparative Analytics & Matrix Schemas ---
+
+class SkillCoverageItem(BaseModel):
+    skill_id: int
+    canonical_name: str
+    category: str
+    distinct_job_count: int
+    coverage_percentage: float
+    required_count: int
+    preferred_count: int
+    family_a_count: int
+    family_b_count: int
+    family_c_count: int
+
+
+class CoverageResponse(BaseModel):
+    total_jobs: int
+    analysable_count: int  # Denominator N
+    role_family_counts: Dict[str, int]
+    active_family_filter: Optional[str] = None
+    skills: List[SkillCoverageItem]
+
+
+class MatrixJobInfo(BaseModel):
+    job_id: int
+    external_job_id: Optional[str] = None
+    title: str
+    role_family: str
+    status: str
+
+
+class CrossRoleMatrixResponse(BaseModel):
+    total_analysable_jobs: int
+    family_counts: Dict[str, int]
+    jobs: List[MatrixJobInfo]
+    skills: List[SkillCoverageItem]
+    # skill_id -> { job_id -> "required" | "preferred" | "none" }
+    matrix: Dict[int, Dict[int, str]]
+
+
+class SkillEvidenceItem(BaseModel):
+    job_id: int
+    job_title: str
+    external_job_id: Optional[str] = None
+    role_family: str
+    requirement_type: str
+    review_status: str
+    evidence_snippet: str
+
+
+class SkillEvidenceResponse(BaseModel):
+    skill_id: int
+    canonical_name: str
+    category: str
+    distinct_jobs_count: int
+    items: List[SkillEvidenceItem]
+
+
+

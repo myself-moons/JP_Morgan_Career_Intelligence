@@ -19,17 +19,22 @@ import {
   GraduationCap,
   Star,
   Eye,
+  Globe,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 import {
   fetchJobs,
   createJob,
+  updateJob,
   deleteJob,
   seedBaselineJobs,
   uploadJobDocument,
   fetchNextJobCode,
   parseRawText,
+  syncJpmcJobs,
 } from '../services/api';
-import { Job, JobListResponse } from '../types';
+import { Job, JobListResponse, SyncResult } from '../types';
 
 const ROLE_FAMILIES = [
   'Family A: Data Management, Quality and Governance',
@@ -80,6 +85,42 @@ export const JobLibrary: React.FC = () => {
     charCount: number;
     lineCount: number;
   } | null>(null);
+
+  // Sync Modal State
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
+  const [syncLimit, setSyncLimit] = useState<number>(25);
+  const [syncDryRun, setSyncDryRun] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handlePromoteToAvailable = async (jobId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      await updateJob(jobId, { status: 'Available' });
+      await loadJobs();
+      if (selectedJob && selectedJob.id === jobId) {
+        setSelectedJob(prev => (prev ? { ...prev, status: 'Available' } : null));
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to promote job');
+    }
+  };
+
+  const handleRunSync = async () => {
+    try {
+      setIsSyncing(true);
+      setSyncError(null);
+      setSyncResult(null);
+      const res = await syncJpmcJobs(syncLimit, syncDryRun);
+      setSyncResult(res);
+      await loadJobs();
+    } catch (err: any) {
+      setSyncError(err?.message || 'Sync failed');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const loadJobs = async () => {
     setLoading(true);
@@ -304,6 +345,22 @@ export const JobLibrary: React.FC = () => {
         </span>
       );
     }
+    if (status.toLowerCase() === 'discovered') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-1.5"></span>
+          Discovered
+        </span>
+      );
+    }
+    if (status.toLowerCase() === 'stale') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+          Stale
+        </span>
+      );
+    }
     if (status.toLowerCase() === 'jd unavailable') {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
@@ -360,6 +417,14 @@ export const JobLibrary: React.FC = () => {
         </div>
         <div className="flex items-center space-x-2">
           <button
+            onClick={() => setIsSyncModalOpen(true)}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium transition shadow-sm"
+            title="Sync live job listings directly from JPMorgan Chase careers API"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Sync from JPMC</span>
+          </button>
+          <button
             onClick={handleReSeed}
             className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition shadow-sm"
             title="Re-populate the 11 baseline JPMorgan Chase jobs"
@@ -414,8 +479,9 @@ export const JobLibrary: React.FC = () => {
             >
               <option value="All">All Statuses</option>
               <option value="Available">Available</option>
+              <option value="Discovered">Discovered (Live Sync)</option>
               <option value="JD unavailable">JD unavailable</option>
-              <option value="Stale">Stale</option>
+              <option value="Stale">Stale (Vanished)</option>
               <option value="Archived">Archived</option>
             </select>
           </div>
@@ -496,6 +562,12 @@ export const JobLibrary: React.FC = () => {
                         </span>
                         <span>&bull;</span>
                         <span>{job.company_name}</span>
+                        {job.capture_date && (
+                          <>
+                            <span>&bull;</span>
+                            <span className="text-slate-500 font-medium">Posted: {job.capture_date}</span>
+                          </>
+                        )}
                         {job.context_note && (
                           <>
                             <span>&bull;</span>
@@ -516,7 +588,20 @@ export const JobLibrary: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{job.location}</td>
-                    <td className="py-3 px-4 whitespace-nowrap">{getStatusBadge(job.status)}</td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        {getStatusBadge(job.status)}
+                        {job.status === 'Discovered' && (
+                          <button
+                            onClick={(e) => handlePromoteToAvailable(job.id, e)}
+                            title="Promote to Available (include in N=10 analysis pool)"
+                            className="px-1.5 py-0.5 text-[10px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 rounded font-medium transition"
+                          >
+                            Promote
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       {job.responsibilities || job.qualifications ? (
                         <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
@@ -986,6 +1071,12 @@ export const JobLibrary: React.FC = () => {
                   <span>{selectedJob.company_name}</span>
                   <span>&bull;</span>
                   <span>{selectedJob.location}</span>
+                  {selectedJob.capture_date && (
+                    <>
+                      <span>&bull;</span>
+                      <span className="text-slate-700 font-semibold">Posted: {selectedJob.capture_date}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <button
@@ -1027,7 +1118,18 @@ export const JobLibrary: React.FC = () => {
               {/* Metadata Pill */}
               <div className="flex flex-wrap items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs gap-2">
                 <div className="flex items-center gap-3">
-                  <div>Status: {getStatusBadge(selectedJob.status)}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span>Status:</span>
+                    {getStatusBadge(selectedJob.status)}
+                    {selectedJob.status === 'Discovered' && (
+                      <button
+                        onClick={() => handlePromoteToAvailable(selectedJob.id)}
+                        className="px-2 py-0.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium transition shadow-sm"
+                      >
+                        Promote to Available
+                      </button>
+                    )}
+                  </div>
                   <span
                     className={`inline-block px-2 py-0.5 rounded border text-[11px] font-medium ${getFamilyBadgeColor(
                       selectedJob.role_family
@@ -1155,6 +1257,130 @@ export const JobLibrary: React.FC = () => {
                 className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium transition shadow-sm"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* JPMC Oracle Cloud Live Sync Modal */}
+      {isSyncModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Sync from JPMorgan Chase Careers</h3>
+                  <p className="text-xs text-slate-500">Live JSON ingestion from Oracle Recruiting Cloud (CX_1001)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSyncModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs text-slate-600">
+              <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-1.5 text-indigo-900">
+                <div className="font-semibold flex items-center gap-1.5 text-indigo-800">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                  <span>Oracle Cloud Recruiting Endpoints</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-indigo-700">
+                  Directly queries JPMC's candidate experience API for Goregaon and Mumbai postings. New listings enter with status <code className="bg-white px-1 py-0.5 rounded border font-semibold">Discovered</code>, preserving your analysable baseline ($N=10$) until you review and promote them.
+                </p>
+              </div>
+
+              {syncError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{syncError}</span>
+                </div>
+              )}
+
+              {syncResult && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
+                  <div className="font-bold text-emerald-800 flex items-center gap-1.5 text-xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Sync Completed Successfully</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-center pt-1">
+                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
+                      <div className="text-base font-bold text-indigo-600">{syncResult.added}</div>
+                      <div className="text-[10px] text-slate-500">Discovered</div>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
+                      <div className="text-base font-bold text-blue-600">{syncResult.updated}</div>
+                      <div className="text-[10px] text-slate-500">Backfilled</div>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
+                      <div className="text-base font-bold text-slate-600">{syncResult.unchanged}</div>
+                      <div className="text-[10px] text-slate-500">Unchanged</div>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
+                      <div className="text-base font-bold text-amber-600">{syncResult.stale}</div>
+                      <div className="text-[10px] text-slate-500">Stale</div>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 italic">{syncResult.message}</p>
+                </div>
+              )}
+
+              {!syncResult && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Max Job Requisitions to Query:
+                    </label>
+                    <select
+                      value={syncLimit}
+                      onChange={(e) => setSyncLimit(Number(e.target.value))}
+                      className="w-full py-2 px-3 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value={10}>10 Requisitions</option>
+                      <option value={25}>25 Requisitions (Default Page)</option>
+                      <option value={50}>50 Requisitions</option>
+                      <option value={100}>100 Requisitions</option>
+                    </select>
+                  </div>
+
+                  <label className="flex items-center space-x-2 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={syncDryRun}
+                      onChange={(e) => setSyncDryRun(e.target.checked)}
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs text-slate-700 font-medium">
+                      Dry Run Mode (simulate sync without saving changes to local database)
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setIsSyncModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRunSync}
+                disabled={isSyncing}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition disabled:opacity-60"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Syncing from JPMC...' : syncResult ? 'Sync Again' : 'Start Live Sync'}</span>
               </button>
             </div>
           </div>

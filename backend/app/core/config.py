@@ -1,10 +1,12 @@
 import os
 from pathlib import Path
 from typing import List
+from dotenv import load_dotenv
 
 # Resolve repository root directory reliably
 # backend/app/core/config.py -> backend/app/core -> backend/app -> backend -> root
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+load_dotenv(ROOT_DIR / ".env")
 BACKEND_DIR = ROOT_DIR / "backend"
 DATA_DIR = ROOT_DIR / "data"
 UPLOADS_DIR = ROOT_DIR / "uploads"
@@ -24,6 +26,10 @@ class Settings:
     HOST: str = os.getenv("JCI_HOST", "127.0.0.1")
     PORT: int = int(os.getenv("JCI_PORT", "8000"))
     DB_CONSOLE_PORT: int = int(os.getenv("JCI_DB_CONSOLE_PORT", "8080"))
+    
+    # LLM Settings (Option 2: Cloud Adapter for Explainable AI)
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
     
     # Paths & Relational Persistence
     BASE_DIR: Path = ROOT_DIR
