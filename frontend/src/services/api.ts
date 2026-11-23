@@ -7,6 +7,12 @@ import {
   SyncResult,
   ExplainableMatch,
   TopJobMatchesResponse,
+  TaxonomySkill,
+  JobSkillRecord,
+  DisambiguateResult,
+  CoverageResponse,
+  CrossRoleMatrixResponse,
+  SkillEvidenceResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -304,5 +310,193 @@ export async function fetchTopJobMatches(): Promise<TopJobMatchesResponse> {
   }
   return response.json();
 }
+
+// --- M3: Taxonomy & Skill Review API ---
+
+export async function fetchTaxonomySkills(params?: {
+  category?: string;
+  search?: string;
+}): Promise<TaxonomySkill[]> {
+  const query = new URLSearchParams();
+  if (params?.category && params.category !== 'All') {
+    query.append('category', params.category);
+  }
+  if (params?.search) {
+    query.append('search', params.search);
+  }
+  const url = `${API_BASE}/taxonomy/skills${query.toString() ? `?${query.toString()}` : ''}`;
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch canonical skills: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function createCanonicalSkill(payload: {
+  canonical_name: string;
+  category: string;
+  description?: string;
+  aliases?: string[];
+}): Promise<TaxonomySkill> {
+  const response = await fetch(`${API_BASE}/taxonomy/skills`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to create canonical skill');
+  }
+  return response.json();
+}
+
+export async function addSkillAlias(skillId: number, aliasText: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE}/taxonomy/skills/${skillId}/aliases`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ alias_text: aliasText }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to add alias');
+  }
+  return response.json();
+}
+
+export async function disambiguateSkill(phrase: string, context?: string): Promise<DisambiguateResult> {
+  const response = await fetch(`${API_BASE}/taxonomy/ai-disambiguate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ phrase, context }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Disambiguation failed');
+  }
+  return response.json();
+}
+
+export async function fetchJobSkills(jobId: number): Promise<JobSkillRecord[]> {
+  const response = await fetch(`${API_BASE}/taxonomy/jobs/${jobId}/skills`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch job skills: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function extractJobSkills(jobId: number): Promise<JobSkillRecord[]> {
+  const response = await fetch(`${API_BASE}/taxonomy/jobs/${jobId}/extract-skills`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Extraction failed');
+  }
+  return response.json();
+}
+
+export async function batchExtractSkills(): Promise<{ jobs_processed: number; total_extractions: number; message: string }> {
+  const response = await fetch(`${API_BASE}/taxonomy/jobs/batch-extract-skills`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error('Batch extraction failed');
+  }
+  return response.json();
+}
+
+export async function updateJobSkill(
+  jobId: number,
+  jobSkillId: number,
+  payload: {
+    requirement_type?: string;
+    review_status?: string;
+    evidence_snippet?: string;
+    skill_id?: number;
+  }
+): Promise<JobSkillRecord> {
+  const response = await fetch(`${API_BASE}/taxonomy/jobs/${jobId}/skills/${jobSkillId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to update job skill review');
+  }
+  return response.json();
+}
+
+export async function createManualJobSkill(
+  jobId: number,
+  payload: {
+    skill_id: number;
+    requirement_type?: string;
+    evidence_snippet?: string;
+  }
+): Promise<JobSkillRecord> {
+  const response = await fetch(`${API_BASE}/taxonomy/jobs/${jobId}/skills`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to add skill to job');
+  }
+  return response.json();
+}
+
+// --- M4: Comparative Analytics & Matrix API ---
+
+export async function fetchSkillCoverage(params?: {
+  role_family?: string;
+  category?: string;
+  search?: string;
+}): Promise<CoverageResponse> {
+  const query = new URLSearchParams();
+  if (params?.role_family && params.role_family !== 'All') {
+    query.append('role_family', params.role_family);
+  }
+  if (params?.category && params.category !== 'All') {
+    query.append('category', params.category);
+  }
+  if (params?.search) {
+    query.append('search', params.search);
+  }
+  const url = `${API_BASE}/analytics/coverage${query.toString() ? `?${query.toString()}` : ''}`;
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch skill coverage: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function fetchCrossRoleMatrix(): Promise<CrossRoleMatrixResponse> {
+  const response = await fetch(`${API_BASE}/analytics/matrix`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch cross-role matrix: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function fetchSkillEvidence(
+  skillId: number,
+  status: string = 'Available'
+): Promise<SkillEvidenceResponse> {
+  const url = `${API_BASE}/analytics/skills/${skillId}/evidence?status=${encodeURIComponent(status)}`;
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch skill evidence: ${response.statusText}`);
+  }
+  return response.json();
+}
+
 
 

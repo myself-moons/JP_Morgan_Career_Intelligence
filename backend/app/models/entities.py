@@ -98,3 +98,63 @@ class LLMEvaluation(Base):
         return f"<LLMEvaluation(id={self.id}, resume_id={self.resume_id}, job_id={self.job_id})>"
 
 
+class Skill(Base):
+    __tablename__ = "skills"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    canonical_name = Column(String(100), unique=True, index=True, nullable=False)
+    category = Column(String(100), index=True, nullable=False, default="Technical")
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    # Relationships
+    aliases = relationship("SkillAlias", back_populates="skill", cascade="all, delete-orphan")
+    job_skills = relationship("JobSkill", back_populates="skill", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Skill(id={self.id}, name='{self.canonical_name}', category='{self.category}')>"
+
+
+class SkillAlias(Base):
+    __tablename__ = "skill_aliases"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    alias_text = Column(String(100), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    # Relationships
+    skill = relationship("Skill", back_populates="aliases")
+
+    def __repr__(self):
+        return f"<SkillAlias(id={self.id}, alias='{self.alias_text}')>"
+
+
+class JobSkill(Base):
+    __tablename__ = "job_skills"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    job_id = Column(Integer, ForeignKey("job_listings.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, index=True)
+    matched_alias = Column(String(100), nullable=True)
+    requirement_type = Column(String(50), nullable=False, default="Required", index=True)  # Required, Preferred, Unspecified
+    extraction_method = Column(String(50), nullable=False, default="dictionary")  # dictionary, contextual_rule, manual
+    review_status = Column(String(50), nullable=False, default="Proposed", index=True)  # Proposed, Accepted, Rejected, Edited
+    evidence_snippet = Column(Text, nullable=True)
+    confidence = Column(Integer, default=90, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("job_id", "skill_id", name="uq_job_skill"),
+    )
+
+    # Relationships
+    job = relationship("JobListing", backref="extracted_skills")
+    skill = relationship("Skill", back_populates="job_skills")
+
+    def __repr__(self):
+        return f"<JobSkill(id={self.id}, job_id={self.job_id}, skill_id={self.skill_id}, status='{self.review_status}')>"
+
+
+

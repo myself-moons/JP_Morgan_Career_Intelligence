@@ -173,3 +173,130 @@ class TopJobMatchesResponse(BaseModel):
     top_matches: List[TopJobMatch]
 
 
+# --- M3: Taxonomy & Skill Review Schemas ---
+
+class SkillAliasOut(BaseModel):
+    id: int
+    alias_text: str
+
+
+class SkillCreate(BaseModel):
+    canonical_name: str
+    category: str = "Technical"
+    description: Optional[str] = None
+    aliases: List[str] = Field(default_factory=list)
+
+
+class SkillOut(BaseModel):
+    id: int
+    canonical_name: str
+    category: str
+    description: Optional[str] = None
+    aliases: List[str] = Field(default_factory=list)
+    job_count: int = 0
+
+
+class AddAliasRequest(BaseModel):
+    alias_text: str
+
+
+class JobSkillOut(BaseModel):
+    id: int
+    job_id: int
+    skill_id: int
+    canonical_name: str
+    category: str
+    matched_alias: Optional[str] = None
+    requirement_type: str  # Required, Preferred, Unspecified
+    extraction_method: str
+    review_status: str  # Proposed, Accepted, Rejected, Edited
+    evidence_snippet: Optional[str] = None
+    confidence: int
+
+
+class JobSkillUpdate(BaseModel):
+    requirement_type: Optional[str] = None
+    review_status: Optional[str] = None
+    evidence_snippet: Optional[str] = None
+    skill_id: Optional[int] = None
+
+
+class JobSkillCreate(BaseModel):
+    skill_id: int
+    requirement_type: str = "Required"
+    evidence_snippet: Optional[str] = None
+
+
+class DisambiguateRequest(BaseModel):
+    phrase: str
+    context: Optional[str] = None
+
+
+class DisambiguateResponse(BaseModel):
+    phrase: str
+    suggested_canonical_name: str
+    suggested_skill_id: Optional[int] = None
+    confidence: int
+    rationale: str
+    is_llm_powered: bool
+
+
+# --- M4: Comparative Analytics & Matrix Schemas ---
+
+class SkillCoverageItem(BaseModel):
+    skill_id: int
+    canonical_name: str
+    category: str
+    distinct_job_count: int
+    coverage_percentage: float
+    required_count: int
+    preferred_count: int
+    family_a_count: int
+    family_b_count: int
+    family_c_count: int
+
+
+class CoverageResponse(BaseModel):
+    total_jobs: int
+    analysable_count: int  # Denominator N
+    role_family_counts: Dict[str, int]
+    active_family_filter: Optional[str] = None
+    skills: List[SkillCoverageItem]
+
+
+class MatrixJobInfo(BaseModel):
+    job_id: int
+    external_job_id: Optional[str] = None
+    title: str
+    role_family: str
+    status: str
+
+
+class CrossRoleMatrixResponse(BaseModel):
+    total_analysable_jobs: int
+    family_counts: Dict[str, int]
+    jobs: List[MatrixJobInfo]
+    skills: List[SkillCoverageItem]
+    # skill_id -> { job_id -> "required" | "preferred" | "none" }
+    matrix: Dict[int, Dict[int, str]]
+
+
+class SkillEvidenceItem(BaseModel):
+    job_id: int
+    job_title: str
+    external_job_id: Optional[str] = None
+    role_family: str
+    requirement_type: str
+    review_status: str
+    evidence_snippet: str
+
+
+class SkillEvidenceResponse(BaseModel):
+    skill_id: int
+    canonical_name: str
+    category: str
+    distinct_jobs_count: int
+    items: List[SkillEvidenceItem]
+
+
+
