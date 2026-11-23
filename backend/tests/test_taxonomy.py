@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import SessionLocal, init_db
 from app.models.entities import Skill, SkillAlias, JobListing, JobSkill
+from app.core.seed import seed_baseline_jobs
 from app.services.taxonomy_service import seed_taxonomy_if_empty, extract_and_save_job_skills
 
 
@@ -11,6 +12,7 @@ from app.services.taxonomy_service import seed_taxonomy_if_empty, extract_and_sa
 def setup_taxonomy_db():
     init_db()
     db = SessionLocal()
+    seed_baseline_jobs(db)
     seed_taxonomy_if_empty(db)
     db.close()
 

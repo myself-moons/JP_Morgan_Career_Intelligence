@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import SessionLocal, init_db
 from app.models.entities import JobListing, Skill
+from app.core.seed import seed_baseline_jobs
 from app.services.taxonomy_service import seed_taxonomy_if_empty, batch_extract_all_jobs
 from app.services.analytics_service import compute_skill_coverage, compute_cross_role_matrix
 
@@ -12,6 +13,7 @@ from app.services.analytics_service import compute_skill_coverage, compute_cross
 def setup_analytics_data():
     init_db()
     db = SessionLocal()
+    seed_baseline_jobs(db)
     seed_taxonomy_if_empty(db)
     batch_extract_all_jobs(db)
     db.close()
