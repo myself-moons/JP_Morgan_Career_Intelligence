@@ -109,14 +109,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
           <div>
             <div className="inline-flex items-center space-x-2 text-xs font-semibold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Phase 1.3 & 1.4 Active: Taxonomy Review & Comparative Analytics Matrix</span>
+              <span>Skill Intelligence & Role Matcher Ready</span>
             </div>
             <h2 className="text-2xl font-bold tracking-tight">
               JPMorgan Career Intelligence Platform
             </h2>
             <p className="text-slate-300 text-sm mt-1 max-w-2xl">
-              Local-first single-user workspace for dissecting JPMorgan Chase job postings,
-              evaluating resume fit with Explainable AI, and comparing cross-role skill coverage across the $N=10$ baseline.
+              Explore JPMorgan Chase job openings, check your resume match with explainable AI,
+              and compare which skills matter most across different roles.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -125,13 +125,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
               className="inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition shadow-sm"
             >
               <FileSearch className="w-4 h-4" />
-              <span>Skill Review Workspace (M3)</span>
+              <span>Explore Skills & Taxonomy</span>
             </button>
             <button
               onClick={() => onNavigate('jobs')}
               className="inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-white font-medium text-sm transition"
             >
-              <span>Explore Job Library ({jobStats ? jobStats.total_count : 11})</span>
+              <span>View Job Openings ({jobStats ? jobStats.total_count : 11})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -143,7 +143,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Analysable Sample ($N$)
+              Active Job Openings
             </span>
             <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
               <Briefcase className="w-5 h-5" />
@@ -158,14 +158,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
             </span>
           </div>
           <div className="mt-2 text-xs text-slate-500">
-            Status: Available (BR-06 compliant)
+            Full descriptions ready to analyze
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Canonical Skills
+              Tracked Skills
             </span>
             <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
               <Cpu className="w-5 h-5" />
@@ -180,14 +180,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
             </span>
           </div>
           <div className="mt-2 text-xs text-emerald-600 font-medium">
-            Normalized across 5 enterprise categories
+            Across Data, Tech, Governance & Finance
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Explainable AI Matcher
+              AI Match Assistant
             </span>
             <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
               <FileText className="w-5 h-5" />
@@ -197,14 +197,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
             <span className="text-2xl font-bold text-purple-950">Gemini Flash</span>
           </div>
           <div className="mt-2 text-xs text-slate-500">
-            3-Dimensional rubric with SHA-256 caching
+            Clear 3-way rubric: Tech, Domain & Seniority
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Cloud Job Watcher
+              Daily Job Watcher
             </span>
             <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
               <Layers className="w-5 h-5" />
@@ -214,7 +214,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
             <span className="text-2xl font-bold text-slate-900">08:30 IST</span>
           </div>
           <div className="mt-2 text-xs text-amber-600 font-medium">
-            Daily GitHub Actions Cron & HTML Alerts
+            Automated Daily Job Sync & Email Digest
           </div>
         </div>
       </div>
@@ -230,11 +230,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
               <div>
                 <div className="flex items-center space-x-2">
                   <h3 className="text-base font-bold text-slate-900">
-                    Top 5 Best-Fit JPMC Roles for Active Resume
+                    Top 5 Recommended Roles for Your Resume
                   </h3>
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                     <Sparkles className="w-3 h-3 text-emerald-600" />
-                    <span>Explainable Match</span>
+                    <span>Clear Match Breakdown</span>
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -332,11 +332,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
             <div className="flex items-center space-x-2">
               <BarChart3 className="w-5 h-5 text-blue-600" />
               <h3 className="text-base font-bold text-slate-900">
-                Comparative Skill Analytics & Cross-Role Matrix (Milestone M4)
+                Skills in Demand & Cross-Role Matrix
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Distinct-job skill coverage calculated across the active sample ($N = {coverageData ? coverageData.analysable_count : 10}$). Excludes status `JD unavailable` (BR-06, BR-07).
+              Shows how many job postings ask for each skill ({coverageData ? coverageData.analysable_count : 10} verified roles analyzed). Postings without a full description are excluded to keep numbers honest.
             </p>
           </div>
 
@@ -352,7 +352,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
                 }`}
               >
                 <Table className="w-3.5 h-3.5" />
-                <span>Coverage Ranking</span>
+                <span>Most In-Demand Skills</span>
               </button>
               <button
                 onClick={() => setAnalyticsViewMode('matrix')}
@@ -363,7 +363,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
                 }`}
               >
                 <Grid className="w-3.5 h-3.5" />
-                <span>Cross-Role Matrix (FR-16)</span>
+                <span>Job-by-Job Skill Grid</span>
               </button>
             </div>
           </div>
@@ -421,13 +421,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
                 <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4 w-12 text-center">#</th>
-                    <th className="py-3 px-4">Canonical Skill</th>
+                    <th className="py-3 px-4">Skill Name</th>
                     <th className="py-3 px-4">Category</th>
-                    <th className="py-3 px-4">Coverage % ($N={coverageData.analysable_count}$)</th>
-                    <th className="py-3 px-4 text-center">Distinct Jobs</th>
-                    <th className="py-3 px-4 text-center">Req / Pref</th>
-                    <th className="py-3 px-4 text-center">Family A / B / C</th>
-                    <th className="py-3 px-4 text-right">Evidence</th>
+                    <th className="py-3 px-4">Coverage %</th>
+                    <th className="py-3 px-4 text-center">Jobs Asking</th>
+                    <th className="py-3 px-4 text-center">Must-Have vs Preferred</th>
+                    <th className="py-3 px-4 text-center">Role Tracks (A | B | C)</th>
+                    <th className="py-3 px-4 text-right">Job Quotes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -585,7 +585,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Verbatim JD evidence sentences across JPMorgan Chase roles ({evidenceData ? evidenceData.items.length : 0} matching jobs)
+                  Exact quotes from JPMorgan Chase job descriptions ({evidenceData ? evidenceData.items.length : 0} matching jobs)
                 </p>
               </div>
               <button

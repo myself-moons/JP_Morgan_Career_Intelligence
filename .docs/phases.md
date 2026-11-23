@@ -58,6 +58,7 @@ Over the course of implementation, user requirements and practical constraints d
 | **API Quota Safety** | Basic error handling if key missing. | SHA-256 fingerprint caching in SQLite (`llm_evaluations`), manual user-only triggers, and offline ranking for leaderboard and daily alerts. | **Completed & Live** |
 | **Scheduled Automation** | Unspecified / planned for Phase 2. | **GitHub Actions Cron Pipeline** running daily at 08:30 IST, synchronizing live jobs, ranking against active profile, compiling Markdown digests, and sending executive HTML emails via Gmail SMTP. | **Completed & Live** |
 | **Continuous Integration** | Local pytest runs only. | Automated `.github/workflows/ci.yml` running 35 backend pytest tests and Vite/TypeScript production build on every commit/PR. | **Completed & Live** |
+| **Data Governance & Analytics** | Manual review of raw text. | **Enterprise Data Quality & MDM Taxonomy Engine:** 35+ canonical skills, 60+ aliases, active denominator governance ($N=10$, BR-06), cross-role matrix grid, and 100% data lineage linking metrics to verbatim sentence evidence. | **Completed & Live** |
 
 ---
 

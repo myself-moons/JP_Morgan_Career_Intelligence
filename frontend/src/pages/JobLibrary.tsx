@@ -422,7 +422,7 @@ export const JobLibrary: React.FC = () => {
             title="Sync live job listings directly from JPMorgan Chase careers API"
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Sync from JPMC</span>
+            <span>Fetch Live JPMC Jobs</span>
           </button>
           <button
             onClick={handleReSeed}
@@ -430,7 +430,7 @@ export const JobLibrary: React.FC = () => {
             title="Re-populate the 11 baseline JPMorgan Chase jobs"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Baseline (11 Jobs)</span>
+            <span>Reset to Sample (11 Jobs)</span>
           </button>
           <button
             onClick={openAddModal}
@@ -495,7 +495,7 @@ export const JobLibrary: React.FC = () => {
             </span>
             <span>&bull;</span>
             <span>
-              Analysable Pool ($N$): <strong className="text-slate-800">{data.analysable_count}</strong>
+              Active for Analysis: <strong className="text-slate-800">{data.analysable_count}</strong>
             </span>
             <span>&bull;</span>
             <span className="text-slate-400">

@@ -307,9 +307,9 @@ export const SkillAnalysis: React.FC = () => {
               <FileSearch className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">Skill Extraction & Taxonomy Review</h1>
+              <h1 className="text-xl font-bold text-slate-900">Skill Taxonomy & Review</h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                Milestone M3: Canonical skill taxonomy, alias resolution, and human-in-the-loop review interface (FR-11 to FR-14, FR-42).
+                Explore skills identified in JPMorgan Chase job descriptions, approve or correct matches, and view real sentence evidence.
               </p>
             </div>
           </div>
@@ -326,7 +326,7 @@ export const SkillAnalysis: React.FC = () => {
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Job Skill Review (Human-in-the-Loop)</span>
+            <span>Review Role Skills</span>
           </button>
           <button
             onClick={() => setActiveView('taxonomy')}
@@ -337,7 +337,7 @@ export const SkillAnalysis: React.FC = () => {
             }`}
           >
             <Tag className="w-3.5 h-3.5" />
-            <span>Canonical Taxonomy & Aliases</span>
+            <span>Standard Skills Dictionary</span>
           </button>
         </div>
       </div>
@@ -386,16 +386,16 @@ export const SkillAnalysis: React.FC = () => {
                   title="Batch extract skills across all available jobs in the library"
                 >
                   <Layers className={`w-3.5 h-3.5 ${batchExtracting ? 'animate-spin' : ''}`} />
-                  <span>{batchExtracting ? 'Batching...' : 'Batch Extract All (N=10)'}</span>
+                  <span>{batchExtracting ? 'Batching...' : 'Scan All Jobs (N=10)'}</span>
                 </button>
 
                 <button
                   onClick={() => setIsDisambiguateOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold shadow-sm transition"
-                  title="Use Gemini AI to map an ambiguous phrase to a canonical skill (FR-42, TC-22)"
+                  title="Use Gemini AI to map an ambiguous phrase to a standard skill"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  <span>AI Disambiguate</span>
+                  <span>AI Skill Helper</span>
                 </button>
 
                 <button

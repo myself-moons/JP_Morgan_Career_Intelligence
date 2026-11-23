@@ -42,7 +42,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
       id: 'profile',
       label: 'Profile & Resume',
       icon: <UserCheck className="w-4 h-4" />,
-      badge: 'FR-37/38',
+      badge: 'Keywords',
     },
     {
       id: 'learning',
@@ -51,8 +51,9 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
     },
     {
       id: 'db_console',
-      label: 'DB Console (FR-41)',
+      label: 'Database Console',
       icon: <Database className="w-4 h-4" />,
+      badge: 'SQL',
     },
   ];
 
