@@ -14,6 +14,8 @@ import {
   fetchSkillCoverage,
   fetchCrossRoleMatrix,
   fetchSkillEvidence,
+  getExportCoverageUrl,
+  getExportMatrixUrl,
 } from '../services/api';
 import {
   Briefcase,
@@ -32,6 +34,7 @@ import {
   Eye,
   X,
   FileSearch,
+  Download,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -340,8 +343,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
             </p>
           </div>
 
-          {/* View Switcher: Table vs Matrix */}
-          <div className="flex items-center gap-2 self-start md:self-auto">
+          {/* View Switcher & Export Buttons */}
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
             <div className="p-1 bg-slate-100 rounded-lg border border-slate-200 flex items-center">
               <button
                 onClick={() => setAnalyticsViewMode('table')}
@@ -366,6 +369,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigat
                 <span>Job-by-Job Skill Grid</span>
               </button>
             </div>
+            <a
+              href={
+                analyticsViewMode === 'matrix'
+                  ? getExportMatrixUrl('csv')
+                  : getExportCoverageUrl({
+                      format: 'csv',
+                      role_family: selectedRoleFamily,
+                      search: skillSearch.trim() || undefined,
+                    })
+              }
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+              title="Download active view as CSV"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>CSV</span>
+            </a>
+            <a
+              href={
+                analyticsViewMode === 'matrix'
+                  ? getExportMatrixUrl('xlsx')
+                  : getExportCoverageUrl({
+                      format: 'xlsx',
+                      role_family: selectedRoleFamily,
+                      search: skillSearch.trim() || undefined,
+                    })
+              }
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold transition"
+              title="Download active view as Excel (.xlsx)"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Excel</span>
+            </a>
           </div>
         </div>
 

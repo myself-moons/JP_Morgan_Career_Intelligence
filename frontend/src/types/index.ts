@@ -258,3 +258,133 @@ export type ActiveTab =
   | 'profile'
   | 'learning'
   | 'db_console';
+
+// --- M5-CardLyze: Profile Evidence & Multi-Dimensional Audit Types ---
+
+export interface UserProfile {
+  id: number;
+  full_name: string;
+  highest_degree: string;
+  education_summary?: string | null;
+  years_experience: string;
+  experience_summary?: string | null;
+  projects_summary?: string | null;
+  updated_at: string;
+}
+
+export interface ProfileEvidenceItem {
+  id: number;
+  skill_id: number;
+  canonical_name: string;
+  category: string;
+  evidence_status: 'Demonstrated' | 'Partial' | 'Learning' | 'Not demonstrated' | string;
+  contribution_type: string;
+  source_project?: string | null;
+  evidence_description?: string | null;
+  recorded_date: string;
+  updated_at: string;
+}
+
+export interface ProfileOverviewResponse {
+  profile: UserProfile;
+  evidence_items: ProfileEvidenceItem[];
+  status_counts: Record<string, number>;
+  contribution_counts: Record<string, number>;
+}
+
+export interface ResumeParseCheck {
+  status: 'Healthy' | 'Warning' | 'Empty' | string;
+  char_count: number;
+  line_count: number;
+  warnings: string[];
+}
+
+export interface SkillCoverageComparisonRow {
+  skill_id: number;
+  canonical_name: string;
+  category: string;
+  requirement_type: string;
+  mentioned_in_resume: boolean;
+  jd_evidence_snippet?: string | null;
+  resume_matching_line?: string | null;
+  profile_evidence_status: string;
+  contribution_type?: string | null;
+  source_project?: string | null;
+}
+
+export interface ClaimedUnsupportedItem {
+  skill_id: number;
+  canonical_name: string;
+  category: string;
+  resume_matching_line: string;
+  current_evidence_status: string;
+  warning_message: string;
+}
+
+export interface DimensionEvaluation {
+  dimension_key: string;
+  dimension_label: string;
+  status_badge: string;
+  summary: string;
+  matched_items: string[];
+  gap_items: string[];
+  notes?: string | null;
+}
+
+export interface ProfileJobMatchResponse {
+  job_id: number;
+  job_title: string;
+  external_job_id?: string | null;
+  role_family: string;
+  resume_id?: number | null;
+  resume_name?: string | null;
+  parse_check: ResumeParseCheck;
+  dimensions: DimensionEvaluation[];
+  skill_coverage: SkillCoverageComparisonRow[];
+  claimed_unsupported: ClaimedUnsupportedItem[];
+  education_requirements: string[];
+  experience_requirements: string[];
+}
+
+// --- M6: Learning Intelligence & Gap Tracker Types ---
+
+export interface LearningResource {
+  id: number;
+  provider: string;
+  title: string;
+  url?: string | null;
+  skills_addressed: string[];
+  cost_status: 'Free' | 'Paid' | 'Freemium' | 'Unknown' | string;
+  has_certificate: boolean;
+  duration?: string | null;
+  verification_date: string;
+  description?: string | null;
+  is_custom: boolean;
+  progress_status: 'Not started' | 'In progress' | 'Completed' | 'Paused' | string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  notes?: string | null;
+  updated_at: string;
+}
+
+export interface LearningProgressResponse {
+  resource: LearningResource;
+  profile_evidence_auto_upgraded: boolean;
+  policy_notice: string;
+}
+
+export interface LearningRecommendationItem {
+  resource: LearningResource;
+  addressed_gaps: string[];
+  max_jd_coverage_count: number;
+  gap_reason: string;
+  pricing_warning?: string | null;
+}
+
+export interface LearningRecommendationsResponse {
+  analysable_jobs_count: number;
+  target_job_id?: number | null;
+  target_job_title?: string | null;
+  priority_gap_skills: string[];
+  recommendations: LearningRecommendationItem[];
+}

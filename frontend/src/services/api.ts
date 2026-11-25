@@ -13,6 +13,13 @@ import {
   CoverageResponse,
   CrossRoleMatrixResponse,
   SkillEvidenceResponse,
+  ProfileOverviewResponse,
+  UserProfile,
+  ProfileEvidenceItem,
+  ProfileJobMatchResponse,
+  LearningResource,
+  LearningProgressResponse,
+  LearningRecommendationsResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -496,6 +503,207 @@ export async function fetchSkillEvidence(
     throw new Error(`Failed to fetch skill evidence: ${response.statusText}`);
   }
   return response.json();
+}
+
+// --- M5-CardLyze: Profile Evidence & Audit API ---
+
+export async function fetchProfileOverview(): Promise<ProfileOverviewResponse> {
+  const response = await fetch(`${API_BASE}/profile`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch profile: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function updateUserProfile(payload: Partial<UserProfile>): Promise<UserProfile> {
+  const response = await fetch(`${API_BASE}/profile`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update user profile');
+  }
+  return response.json();
+}
+
+export async function upsertProfileEvidence(payload: {
+  skill_id: number;
+  evidence_status: string;
+  contribution_type: string;
+  source_project?: string;
+  evidence_description?: string;
+}): Promise<ProfileEvidenceItem> {
+  const response = await fetch(`${API_BASE}/profile/evidence`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to save skill evidence');
+  }
+  return response.json();
+}
+
+export async function deleteProfileEvidence(evidenceId: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/profile/evidence/${evidenceId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete evidence entry');
+  }
+}
+
+export async function fetchProfileJobMatch(
+  jobId: number,
+  resumeId?: number
+): Promise<ProfileJobMatchResponse> {
+  const query = resumeId ? `?resume_id=${resumeId}` : '';
+  const response = await fetch(`${API_BASE}/profile/match-job/${jobId}${query}`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to run profile & resume audit');
+  }
+  return response.json();
+}
+
+// --- M6: Learning Intelligence API ---
+
+export async function fetchLearningResources(params?: {
+  cost_status?: string;
+  progress_status?: string;
+  skill?: string;
+  search?: string;
+}): Promise<LearningResource[]> {
+  const query = new URLSearchParams();
+  if (params?.cost_status && params.cost_status !== 'All') {
+    query.append('cost_status', params.cost_status);
+  }
+  if (params?.progress_status && params.progress_status !== 'All') {
+    query.append('progress_status', params.progress_status);
+  }
+  if (params?.skill && params.skill !== 'All') {
+    query.append('skill', params.skill);
+  }
+  if (params?.search) {
+    query.append('search', params.search);
+  }
+  const url = `${API_BASE}/learning/resources${query.toString() ? `?${query.toString()}` : ''}`;
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!response.ok) {
+    throw new Error('Failed to fetch learning catalogue');
+  }
+  return response.json();
+}
+
+export async function createLearningResource(payload: {
+  provider: string;
+  title: string;
+  url?: string;
+  skills_addressed: string[];
+  cost_status: string;
+  has_certificate: boolean;
+  duration?: string;
+  description?: string;
+}): Promise<LearningResource> {
+  const response = await fetch(`${API_BASE}/learning/resources`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to add learning resource');
+  }
+  return response.json();
+}
+
+export async function deleteLearningResource(resourceId: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/learning/resources/${resourceId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete resource');
+  }
+}
+
+export async function updateLearningProgress(
+  resourceId: number,
+  payload: { status: string; notes?: string }
+): Promise<LearningProgressResponse> {
+  const response = await fetch(`${API_BASE}/learning/resources/${resourceId}/progress`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update learning progress');
+  }
+  return response.json();
+}
+
+export async function fetchLearningRecommendations(
+  jobId?: number
+): Promise<LearningRecommendationsResponse> {
+  const query = jobId ? `?job_id=${jobId}` : '';
+  const response = await fetch(`${API_BASE}/learning/recommendations${query}`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch learning recommendations');
+  }
+  return response.json();
+}
+
+// --- M7: Export URLs ---
+
+export function getExportCoverageUrl(params?: {
+  format?: 'csv' | 'xlsx';
+  role_family?: string;
+  search?: string;
+}): string {
+  const query = new URLSearchParams();
+  query.append('format', params?.format || 'csv');
+  if (params?.role_family && params.role_family !== 'All') {
+    query.append('role_family', params.role_family);
+  }
+  if (params?.search) {
+    query.append('search', params.search);
+  }
+  return `${API_BASE}/exports/coverage?${query.toString()}`;
+}
+
+export function getExportMatrixUrl(format: 'csv' | 'xlsx' = 'xlsx'): string {
+  return `${API_BASE}/exports/matrix?format=${format}`;
+}
+
+export function getExportJobsUrl(params?: {
+  format?: 'csv' | 'xlsx';
+  role_family?: string;
+  status?: string;
+  search?: string;
+}): string {
+  const query = new URLSearchParams();
+  query.append('format', params?.format || 'csv');
+  if (params?.role_family && params.role_family !== 'All') {
+    query.append('role_family', params.role_family);
+  }
+  if (params?.status && params.status !== 'All') {
+    query.append('status', params.status);
+  }
+  if (params?.search) {
+    query.append('search', params.search);
+  }
+  return `${API_BASE}/exports/jobs?${query.toString()}`;
+}
+
+export function getExportLearningUrl(format: 'csv' | 'xlsx' = 'csv'): string {
+  return `${API_BASE}/exports/learning?format=${format}`;
 }
 
 

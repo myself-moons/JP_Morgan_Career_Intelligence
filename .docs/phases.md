@@ -15,9 +15,9 @@ flowchart TD
         M1 --> M2["M2: JD Processing & Extraction ✅<br>(Text Normalization + Section Parser + Metadata)"]
         M2 --> M3["M3: Taxonomy, Aliases & Disambiguation ✅<br>(35+ Canonical Skills + Offline Engine + UI Review)"]
         M3 --> M4["M4: Comparative Analytics ✅<br>(Coverage % across N=10 + Role Families + Matrix Grid)"]
-        M4 --> M5["M5: Resume Workspace, LaTeX & Explainable AI ✅<br>(Multi-Resume + LaTeX Editor + Gemini Bar Raiser + SHA-256 Cache)"]
-        M5 --> M6["M6: Learning Intelligence ⏳<br>(Resource Catalogue + Gap Mapping + Progress Tracker)"]
-        M6 --> M7["M7: Verification & Local Delivery ✅<br>(35 Pytest Tests + CI Pipeline + Exports & Backups)"]
+        M4 --> M5["M5: Resume Workspace, LaTeX, CardLyze & Audit ✅<br>(Multi-Resume + LaTeX + CardLyze Attribution + 6-Dim Audit)"]
+        M5 --> M6["M6: Learning Intelligence ✅<br>(Resource Catalogue + Gap Mapping + BR-09 Tracker)"]
+        M6 --> M7["M7: Verification & Local Delivery ✅<br>(47 Pytest Tests + CI Pipeline + CSV/XLSX Exports & Backups)"]
     end
 
     subgraph Phase1_Cloud["Cloud Automation (Pulled Forward to Phase 1) ✅"]
@@ -57,7 +57,7 @@ Over the course of implementation, user requirements and practical constraints d
 | **Matching Engine** | Simple keyword intersection count. | **Explainable AI Bar Raiser (Gemini Flash)** with 3-dimensional rubric (Technical 45%, Domain Governance 35%, Seniority 20%), detailed rationale, verified competencies, and critical gaps + **Offline Taxonomy Fallback**. | **Completed & Live** |
 | **API Quota Safety** | Basic error handling if key missing. | SHA-256 fingerprint caching in SQLite (`llm_evaluations`), manual user-only triggers, and offline ranking for leaderboard and daily alerts. | **Completed & Live** |
 | **Scheduled Automation** | Unspecified / planned for Phase 2. | **GitHub Actions Cron Pipeline** running daily at 08:30 IST, synchronizing live jobs, ranking against active profile, compiling Markdown digests, and sending executive HTML emails via Gmail SMTP. | **Completed & Live** |
-| **Continuous Integration** | Local pytest runs only. | Automated `.github/workflows/ci.yml` running 35 backend pytest tests and Vite/TypeScript production build on every commit/PR. | **Completed & Live** |
+| **Continuous Integration** | Local pytest runs only. | Automated `.github/workflows/ci.yml` running 47 backend pytest tests and Vite/TypeScript production build on every commit/PR. | **Completed & Live** |
 | **Data Governance & Analytics** | Manual review of raw text. | **Enterprise Data Quality & MDM Taxonomy Engine:** 35+ canonical skills, 60+ aliases, active denominator governance ($N=10$, BR-06), cross-role matrix grid, and 100% data lineage linking metrics to verbatim sentence evidence. | **Completed & Live** |
 
 ---
@@ -129,37 +129,37 @@ Over the course of implementation, user requirements and practical constraints d
 
 ---
 
-### Phase 1.5 (Milestone M5): Profile Matcher, Multi-Resume & Explainable AI
-- **Status:** **Substantially Completed (85%)**
+### Phase 1.5 (Milestone M5): Profile Matcher, CardLyze Attribution & Resume Audit
+- **Status:** **Completed (100%)**
 - **Deliverables Achieved:**
   - **Multi-Resume Repository:** Multiple resumes stored and indexed (`ResumeDocument`), active resume toggle, and in-browser PDF byte streaming (`/api/resumes/{id}/pdf`).
   - **In-App LaTeX Editor:** Full syntax-highlighted editor with real-time export and Overleaf compatibility.
-  - **Explainable AI Matching Engine (Gemini Flash):** 3-dimensional rubric (Tech 45%, Domain 35%, Seniority 20%), detailed rationale, verified competencies, and critical missing gaps.
-  - **Anti-Hoarding Cache:** SHA-256 fingerprint caching in SQLite (`LLMEvaluation`) ensuring 0 duplicate API requests.
-- **Remaining for Completion:**
-  - Pre-seeding explicit CardLyze project attribution (`ProfileEvidence` model) to isolate independent vs. AI-assisted project contributions and flag claimed vs. unsupported skills (TC-15, TC-20).
+  - **Explainable AI Matching Engine (Gemini Flash) & Cache:** 3-dimensional rubric (Tech 45%, Domain 35%, Seniority 20%) with SHA-256 fingerprint caching (`LLMEvaluation`).
+  - **CardLyze Evidence Attribution (`ProfileEvidence`, `UserProfile`, `backend/app/services/profile_service.py`):** Pre-seeded independent vs. AI-assisted contribution splits (FR-18, FR-19, TC-15).
+  - **Deterministic Multi-Dimensional Audit & Resume Coverage (`frontend/src/pages/ProfileMatcher.tsx`):** 6 separate fit dimensions (isolating formal degree prerequisites like Reference Data postgraduate finance under Education & Eligibility per BR-15, TC-21), parse health checks (FR-39), side-by-side matching lines (FR-38, TC-19), and claimed-unsupported warnings (FR-40, BR-13, TC-20).
+  - Tests: `test_tc15_cardlyze_profile_attribution_seeded`, `test_create_and_update_profile_evidence`, `test_tc19_tc20_resume_coverage_and_claimed_unsupported`, `test_tc21_reference_data_education_eligibility_separation`, `test_fr39_resume_parse_check_warnings`.
 
 ---
 
 ### Phase 1.6 (Milestone M6): Learning Intelligence, Gap Mapping & Tracking
-- **Status:** **Ready for Execution (0%)**
-- **Deliverables to Implement:**
-  - Vetted learning resource catalogue (`backend/app/data/learning_resources.json`): Coursera, edX, Forage, official documentation.
-  - Gap mapping service (`backend/app/services/learning_service.py`): Ingests critical gaps identified in M5 (e.g. Collibra, BCBS 239, Lineage) and recommends targeted resources.
-  - Progress tracker workflow: Updates study status (`Not started`, `In progress`, `Completed`) without auto-upgrading profile evidence to Demonstrated (enforcing rule BR-09, TC-14).
-  - Frontend Learning Tracker screen (`frontend/src/pages/LearningTracker.tsx`).
+- **Status:** **Completed (100%)**
+- **Deliverables Achieved:**
+  - Vetted learning resource catalogue (`backend/app/data/learning_resources.json`): 12 curated resources across Collibra University, BIS/BCBS 239, Coursera, Alteryx Academy, DeepLearning.AI, Databricks Academy, Forage, AWS Skill Builder, and Confluent.
+  - Gap mapping service (`backend/app/services/learning_service.py`, `backend/app/api/learning.py`): Ranks unverified/missing JD skill gaps across active roles and cites exact gap justification + unknown-pricing flags (FR-23, BR-10, BR-11).
+  - Progress tracker workflow: Updates study status (`Not started`, `In progress`, `Completed`, `Paused`) while strictly enforcing BR-09 (never auto-upgrading `ProfileEvidence` to Demonstrated).
+  - Frontend Learning Tracker screen (`frontend/src/pages/LearningTracker.tsx`) with custom course creation and progress filtering.
+  - Tests: `test_learning_catalogue_seeded_and_filtered`, `test_gap_driven_recommendations_cite_reasons`, `test_tc14_course_completion_does_not_auto_upgrade_profile_evidence`, `test_add_custom_learning_resource_unknown_cost_default`.
 
 ---
 
 ### Phase 1.7 (Milestone M7): Validation Test Suite, Exports & Local Delivery
-- **Status:** **Substantially Completed (95%)**
+- **Status:** **Completed (100%)**
 - **Deliverables Achieved:**
-  - Automated test suite expanded to **35 Pytest test cases** covering health, ingestion, sync, parsing, resumes, taxonomy, and analytics.
+  - Automated test suite expanded to **47 Pytest test cases** covering health, ingestion, sync, parsing, resumes, taxonomy, analytics, CardLyze profile audit, learning tracker, CSV/Excel exports, and SQLite backup/restore.
+  - Excel & CSV export service (`backend/app/services/export_service.py`, `backend/app/api/exports.py`) for filtered Job Library, Skill Coverage, Cross-Role Matrix, and Learning Tracker (FR-26, TC-18).
+  - Database backup and restore CLI utilities (`backend/backup_db.py`, `backend/restore_db.py`) using SQLite online backup API with `PRAGMA integrity_check` and pre-restore safety snapshots (NFR-09).
   - Continuous Integration workflow (`.github/workflows/ci.yml`) passing on GitHub Actions.
   - Memory budget verified: application runs in <150 MB RAM locally.
-- **Remaining for Completion:**
-  - Excel/CSV export service (`export_service.py`) for active job library and skill matrix.
-  - Database backup and restore CLI utility (`backup_db.py`, `restore_db.py`).
 
 ---
 
@@ -191,26 +191,25 @@ Over the course of implementation, user requirements and practical constraints d
 | **M2** | JD Parsing & Normalization | Days 4–5 | 100% | ✅ **Complete** | Sections & metadata extracted |
 | **M3** | Taxonomy & Human Review | Days 6–7 | 100% | ✅ **Complete** | Full Review UI & AI Disambiguation live |
 | **M4** | Comparative Analytics | Days 8–9 | 100% | ✅ **Complete** | Coverage table & Cross-Role Matrix live |
-| **M5** | Multi-Resume & Matcher | Days 10–12 | 85% | ✅ **Substantial** | Seed CardLyze evidence attribution |
-| **M6** | Learning Intelligence | Days 13–14 | 0% | ⏳ **Upcoming** | Map M5 gaps to learning catalogue |
-| **M7** | Verification & Delivery | Day 15 | 95% | ✅ **Substantial** | 35 Pytest tests passing, CI pipeline live |
+| **M5** | Multi-Resume, CardLyze & Audit | Days 10–12 | 100% | ✅ **Complete** | CardLyze attribution & 6-dim audit live |
+| **M6** | Learning Intelligence | Days 13–14 | 100% | ✅ **Complete** | Catalogue, gap recommendations & tracker live |
+| **M7** | Verification & Delivery | Day 15 | 100% | ✅ **Complete** | 47 Pytest tests, CSV/XLSX exports & DB backup live |
 | **CI/CD** | Cloud Workflows & Alerts | Phase 2 | 100% | ✅ **Complete Early** | Daily cron & CI live in GitHub Actions |
 
 ---
 
 ## 6. Readiness Assessment: Are We Ready to Move to the Next Phase?
 
-### Verdict: **YES — Milestones M3 & M4 Fully Delivered**
+### Verdict: **YES — Phase 1 Local-First MVP (Milestones M0–M7) 100% Delivered**
 
-1. **Milestone M3 (Canonical Skill Taxonomy, Alias Engine & Human Review)**:
-   - 35+ enterprise canonical skills seeded across 5 categories with unique alias maps.
-   - Deterministic extraction attaching exact sentence evidence snippets and classifying Required vs. Preferred.
-   - Full human-in-the-loop review workspace (`frontend/src/pages/SkillAnalysis.tsx`) allowing users to approve (`Accepted`), reject (`Rejected`), reclassify, or manually link skills.
-   - AI-assisted semantic disambiguation (FR-42, TC-22) powered by Gemini Flash with offline fallback.
-2. **Milestone M4 (Comparative Analytics Engine & Cross-Role Matrix)**:
-   - Coverage calculations strictly enforcing active denominator ($N=10$, excluding unavailable JDs) and single-count constraint (BR-06, BR-07, TC-11).
-   - Role Family filtering (Family A, B, C) recalculating $N$ and coverage % dynamically (TC-12).
-   - Cross-Role Matrix view (FR-16) mapping skills across all $N=10$ jobs.
-   - Click-to-inspect verbatim evidence modal (FR-15, FR-25).
-3. **Immediate Recommended Next Sprint**:
-   - **Sprint Focus:** **Milestone M5-CardLyze (Profile Evidence Attribution & Unsupported Skill Audit)** & **Milestone M6 (Learning Intelligence & Gap Tracker)**.
+1. **Milestone M5 (CardLyze Attribution, Profile Evidence & Resume Audit)**:
+   - Pre-seeded `UserProfile` & `ProfileEvidence` preserving independent vs. AI-assisted CardLyze attribution (TC-15).
+   - 6-dimension deterministic evaluation separating formal Education/Eligibility gaps (TC-21, BR-15) from technical/domain skills, plus FR-38 side-by-side line comparisons (TC-19), FR-39 parse checks, and FR-40 claimed-unsupported alerts (TC-20).
+2. **Milestone M6 (Learning Intelligence & Gap Tracker)**:
+   - Seeded 12 vetted learning resources mapped to canonical skill gaps with explicit reason explanations (FR-23, BR-10).
+   - Study progress tracker enforcing BR-09 / TC-14 (course completion does not auto-upgrade skill evidence).
+3. **Milestone M7 (Exports & Recoverability)**:
+   - CSV/Excel export endpoints (`/api/exports/*`) wired into Dashboard, Job Library, and Learning Tracker (FR-26, TC-18).
+   - SQLite online backup & integrity-checked restore CLI (`backend/backup_db.py`, `backend/restore_db.py`, NFR-09).
+4. **Immediate Next Phase**:
+   - **Next Focus:** **Phase 2 (Cloud Production Extension: Docker, PostgreSQL, Firebase Hosting & Auth)** whenever remote multi-user hosting is needed.

@@ -157,4 +157,79 @@ class JobSkill(Base):
         return f"<JobSkill(id={self.id}, job_id={self.job_id}, skill_id={self.skill_id}, status='{self.review_status}')>"
 
 
+class UserProfile(Base):
+    __tablename__ = "user_profile"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    full_name = Column(String(255), nullable=False, default="Manthan Waghela")
+    highest_degree = Column(String(255), nullable=False, default="M.Sc. in Data Science (Pursuing) / B.Sc. in IT")
+    education_summary = Column(Text, nullable=True)
+    years_experience = Column(String(100), nullable=False, default="0.5 - 1 year (Internships & Teaching)")
+    experience_summary = Column(Text, nullable=True)
+    projects_summary = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<UserProfile(id={self.id}, full_name='{self.full_name}')>"
+
+
+class ProfileEvidence(Base):
+    __tablename__ = "profile_evidence"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    skill_id = Column(Integer, ForeignKey("skills.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    evidence_status = Column(String(50), nullable=False, default="Not demonstrated", index=True)  # Demonstrated, Partial, Learning, Not demonstrated
+    contribution_type = Column(String(150), nullable=False, default="Independent")  # Comma-separated: Independent, AI-assisted, Supervised, Collaborative, Tested, Validated
+    source_project = Column(String(255), nullable=True)
+    evidence_description = Column(Text, nullable=True)
+    recorded_date = Column(String(50), nullable=False, default="2026-11-25")
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    skill = relationship("Skill")
+
+    def __repr__(self):
+        return f"<ProfileEvidence(id={self.id}, skill_id={self.skill_id}, status='{self.evidence_status}')>"
+
+
+class LearningResource(Base):
+    __tablename__ = "learning_resources"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    provider = Column(String(120), nullable=False, index=True)
+    title = Column(String(255), nullable=False, index=True)
+    url = Column(Text, nullable=True)
+    skills_addressed = Column(Text, nullable=False, default="[]")  # JSON array of canonical skill names
+    cost_status = Column(String(50), nullable=False, default="Unknown", index=True)  # Free, Paid, Freemium, Unknown
+    has_certificate = Column(Integer, nullable=False, default=0)
+    duration = Column(String(100), nullable=True)
+    verification_date = Column(String(50), nullable=False, default="2026-11-25")
+    description = Column(Text, nullable=True)
+    is_custom = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    progress = relationship("LearningProgress", back_populates="resource", uselist=False, cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<LearningResource(id={self.id}, provider='{self.provider}', title='{self.title}')>"
+
+
+class LearningProgress(Base):
+    __tablename__ = "learning_progress"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    resource_id = Column(Integer, ForeignKey("learning_resources.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    status = Column(String(50), nullable=False, default="Not started", index=True)  # Not started, In progress, Completed, Paused
+    started_at = Column(String(50), nullable=True)
+    completed_at = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    resource = relationship("LearningResource", back_populates="progress")
+
+    def __repr__(self):
+        return f"<LearningProgress(id={self.id}, resource_id={self.resource_id}, status='{self.status}')>"
+
+
 

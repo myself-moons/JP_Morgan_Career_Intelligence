@@ -1,0 +1,134 @@
+[
+  {
+    "provider": "Collibra University",
+    "title": "Collibra Data Intelligence & Governance Foundations",
+    "url": "https://university.collibra.com/",
+    "skills": ["Collibra", "Data Governance", "Data Catalog", "Data Stewardship"],
+    "cost_status": "Free",
+    "has_certificate": true,
+    "duration": "6 hours",
+    "verification_date": "2026-11-25",
+    "description": "Official Collibra training on operating models, business glossaries, data cataloging, and stewardship workflows."
+  },
+  {
+    "provider": "BIS / Basel Committee",
+    "title": "BCBS 239: Principles for Effective Risk Data Aggregation and Risk Reporting",
+    "url": "https://www.bis.org/publ/bcbs239.htm",
+    "skills": ["BCBS 239 / Risk Data", "Data Lineage", "Data Quality", "Data Governance"],
+    "cost_status": "Free",
+    "has_certificate": false,
+    "duration": "4 hours",
+    "verification_date": "2026-11-25",
+    "description": "Primary Basel Committee standard defining governance, architecture, accuracy, and reporting timeliness for Tier-1 banks."
+  },
+  {
+    "provider": "Coursera (IBM / DeepLearning.AI)",
+    "title": "Data Governance, Metadata Management & Lineage Essentials",
+    "url": "https://www.coursera.org/learn/data-governance",
+    "skills": ["Metadata Management", "Data Lineage", "Data Governance", "Reference Data"],
+    "cost_status": "Freemium",
+    "has_certificate": true,
+    "duration": "12 hours",
+    "verification_date": "2026-11-25",
+    "description": "Covers enterprise metadata repositories, end-to-end lineage tracing, MDM reference tables, and Chief Data Office controls."
+  },
+  {
+    "provider": "Alteryx Academy",
+    "title": "Alteryx Designer Core Micro-Credential & Prep Path",
+    "url": "https://community.alteryx.com/t5/Learning-Paths/tkb-p/learning-paths",
+    "skills": ["Alteryx", "ETL Pipelines", "Data Quality"],
+    "cost_status": "Free",
+    "has_certificate": true,
+    "duration": "10 hours",
+    "verification_date": "2026-11-25",
+    "description": "Hands-on automated data blending, reconciliation, profiling, and workflow automation with Alteryx Designer."
+  },
+  {
+    "provider": "DeepLearning.AI",
+    "title": "LLM Workflow Automation, RAG & Enterprise Evaluation",
+    "url": "https://www.deeplearning.ai/short-courses/",
+    "skills": ["Deep Learning / GenAI", "Python", "REST APIs"],
+    "cost_status": "Free",
+    "has_certificate": false,
+    "duration": "5 hours",
+    "verification_date": "2026-11-25",
+    "description": "Practical short courses on structured LLM extraction, retrieval-augmented generation, and automated evaluation guardrails."
+  },
+  {
+    "provider": "Databricks Academy",
+    "title": "Apache Spark & PySpark Data Engineering Fundamentals",
+    "url": "https://www.databricks.com/learn/training/home",
+    "skills": ["Spark", "ETL Pipelines", "Python", "SQL"],
+    "cost_status": "Free",
+    "has_certificate": true,
+    "duration": "14 hours",
+    "verification_date": "2026-11-25",
+    "description": "Distributed DataFrame processing, Delta Lake pipelines, and large-scale SQL transformations in PySpark."
+  },
+  {
+    "provider": "Coursera (University of Illinois / CFI)",
+    "title": "Corporate Credit Risk & Financial Statement Analysis",
+    "url": "https://www.coursera.org/learn/financial-analysis",
+    "skills": ["Credit Risk", "Financial Analysis", "Market Risk", "Treasury & Liquidity"],
+    "cost_status": "Freemium",
+    "has_certificate": true,
+    "duration": "16 hours",
+    "verification_date": "2026-11-25",
+    "description": "Financial ratio analysis, cash flow modeling, counterparty credit assessment, and liquidity risk fundamentals."
+  },
+  {
+    "provider": "Forage",
+    "title": "JPMorgan Chase Quantitative Research & Markets Virtual Experience",
+    "url": "https://www.theforage.com/simulations/jpmorgan",
+    "skills": ["Credit Risk", "Python", "Financial Analysis", "Data Modeling"],
+    "cost_status": "Free",
+    "has_certificate": true,
+    "duration": "6 hours",
+    "verification_date": "2026-11-25",
+    "description": "Simulation analyzing loan default probabilities, commodity pricing models, and banking risk datasets."
+  },
+  {
+    "provider": "Tableau / Salesforce Trailhead",
+    "title": "Tableau Desktop Specialist & Executive Financial Dashboards",
+    "url": "https://trailhead.salesforce.com/",
+    "skills": ["Tableau", "Data Modeling", "Stakeholder Management"],
+    "cost_status": "Free",
+    "has_certificate": false,
+    "duration": "8 hours",
+    "verification_date": "2026-11-25",
+    "description": "Interactive visual analytics, calculated fields, and executive KPI storytelling for finance and risk teams."
+  },
+  {
+    "provider": "AWS Skill Builder",
+    "title": "AWS Cloud Practitioner & S3/RDS Data Architectures",
+    "url": "https://explore.skillbuilder.aws/",
+    "skills": ["AWS", "Docker", "ETL Pipelines"],
+    "cost_status": "Free",
+    "has_certificate": false,
+    "duration": "9 hours",
+    "verification_date": "2026-11-25",
+    "description": "Cloud storage, RDS database security, IAM boundaries, and serverless compute patterns for financial workloads."
+  },
+  {
+    "provider": "Confluent Developer",
+    "title": "Apache Kafka 101 & Event-Driven Payment Architectures",
+    "url": "https://developer.confluent.io/courses/",
+    "skills": ["Kafka", "Wholesale Payments", "REST APIs"],
+    "cost_status": "Free",
+    "has_certificate": true,
+    "duration": "6 hours",
+    "verification_date": "2026-11-25",
+    "description": "Real-time event streaming, topic partitioning, and resilient settlement pipelines."
+  },
+  {
+    "provider": "DAMA / EDM Council Reference",
+    "title": "DAMA-DMBOK2 Master Data, Reference Data & CDO Operating Guide",
+    "url": "https://www.dama.org/",
+    "skills": ["Chief Data Office (CDO)", "Reference Data", "Data Stewardship", "Data Governance"],
+    "cost_status": "Unknown",
+    "has_certificate": false,
+    "duration": "10 hours",
+    "verification_date": "2026-11-25",
+    "description": "Industry standard framework covering Chief Data Office operating models, reference data standardization, and stewardship."
+  }
+]

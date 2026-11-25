@@ -22,6 +22,7 @@ import {
   Globe,
   CheckCircle2,
   RefreshCw,
+  Download,
 } from 'lucide-react';
 import {
   fetchJobs,
@@ -33,6 +34,7 @@ import {
   fetchNextJobCode,
   parseRawText,
   syncJpmcJobs,
+  getExportJobsUrl,
 } from '../services/api';
 import { Job, JobListResponse, SyncResult } from '../types';
 
@@ -415,7 +417,33 @@ export const JobLibrary: React.FC = () => {
             Local repository of ingested JPMorgan Chase postings, automated section extraction, and immutable reference text.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={getExportJobsUrl({
+              format: 'csv',
+              role_family: selectedFamily,
+              status: selectedStatus,
+              search: search.trim() || undefined,
+            })}
+            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition shadow-sm"
+            title="Export filtered jobs to CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>CSV</span>
+          </a>
+          <a
+            href={getExportJobsUrl({
+              format: 'xlsx',
+              role_family: selectedFamily,
+              status: selectedStatus,
+              search: search.trim() || undefined,
+            })}
+            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-medium transition shadow-sm"
+            title="Export filtered jobs to Excel"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Excel</span>
+          </a>
           <button
             onClick={() => setIsSyncModalOpen(true)}
             className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium transition shadow-sm"
@@ -663,22 +691,20 @@ export const JobLibrary: React.FC = () => {
             <div className="border-b border-slate-200 bg-slate-100 px-6 pt-2 flex space-x-4 text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('upload')}
-                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${
-                  activeTab === 'upload'
+                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${activeTab === 'upload'
                     ? 'border-blue-600 text-blue-600 font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                  }`}
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span>1. Upload Document (PDF / DOCX)</span>
               </button>
               <button
                 onClick={() => setActiveTab('paste')}
-                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${
-                  activeTab === 'paste'
+                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${activeTab === 'paste'
                     ? 'border-blue-600 text-blue-600 font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                  }`}
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>2. Paste Raw Text</span>
@@ -1091,22 +1117,20 @@ export const JobLibrary: React.FC = () => {
             <div className="border-b border-slate-200 bg-slate-100 px-6 pt-2 flex space-x-4 text-xs font-semibold">
               <button
                 onClick={() => setDetailTab('structured')}
-                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${
-                  detailTab === 'structured'
+                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${detailTab === 'structured'
                     ? 'border-blue-600 text-blue-600 font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                  }`}
               >
                 <ListChecks className="w-3.5 h-3.5" />
                 <span>Structured Sections (Human Readable)</span>
               </button>
               <button
                 onClick={() => setDetailTab('original')}
-                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${
-                  detailTab === 'original'
+                className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${detailTab === 'original'
                     ? 'border-blue-600 text-blue-600 font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
+                  }`}
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Original Verbatim Text (FR-03 / Audit)</span>

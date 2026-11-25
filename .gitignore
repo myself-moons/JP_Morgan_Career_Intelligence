@@ -16,6 +16,7 @@ data/*.sqlite3
 data/*.db-journal
 data/*.sqlite-shm
 data/*.sqlite-wal
+data/backups/
 jci_data/
 
 # Local private file uploads

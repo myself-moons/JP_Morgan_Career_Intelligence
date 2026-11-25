@@ -11,7 +11,12 @@ from app.api.jobs import router as jobs_router
 from app.api.resumes import router as resumes_router
 from app.api.taxonomy import router as taxonomy_router
 from app.api.analytics import router as analytics_router
+from app.api.profile import router as profile_router
+from app.api.learning import router as learning_router
+from app.api.exports import router as exports_router
 from app.services.taxonomy_service import seed_taxonomy_if_empty
+from app.services.profile_service import seed_profile_if_empty
+from app.services.learning_service import seed_learning_resources_if_empty
 
 
 @asynccontextmanager
@@ -33,6 +38,9 @@ async def lifespan(app: FastAPI):
         seed_resumes(db)
         # Ensure canonical taxonomy and aliases are seeded
         seed_taxonomy_if_empty(db)
+        # Ensure CardLyze profile attribution and learning catalogue are seeded
+        seed_profile_if_empty(db)
+        seed_learning_resources_if_empty(db)
     finally:
         db.close()
 
@@ -68,6 +76,12 @@ app.include_router(taxonomy_router, prefix=settings.API_PREFIX)
 app.include_router(taxonomy_router)
 app.include_router(analytics_router, prefix=settings.API_PREFIX)
 app.include_router(analytics_router)
+app.include_router(profile_router, prefix=settings.API_PREFIX)
+app.include_router(profile_router)
+app.include_router(learning_router, prefix=settings.API_PREFIX)
+app.include_router(learning_router)
+app.include_router(exports_router, prefix=settings.API_PREFIX)
+app.include_router(exports_router)
 
 
 @app.get("/", summary="Root Welcome Endpoint")
