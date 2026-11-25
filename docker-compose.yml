@@ -1,0 +1,20 @@
+services:
+  jci-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jci-platform
+    ports:
+      - "8000:8000"
+    environment:
+      - JCI_HOST=0.0.0.0
+      - JCI_PORT=8000
+      - JCI_SERVE_FRONTEND=true
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./resumes:/app/resumes
+    restart: unless-stopped

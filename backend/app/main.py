@@ -1,6 +1,10 @@
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal, init_db
 from app.models.entities import JobListing
@@ -84,8 +88,15 @@ app.include_router(exports_router, prefix=settings.API_PREFIX)
 app.include_router(exports_router)
 
 
-@app.get("/", summary="Root Welcome Endpoint")
-async def root():
+FRONTEND_DIST_DIR = settings.BASE_DIR / "frontend" / "dist"
+FRONTEND_INDEX = FRONTEND_DIST_DIR / "index.html"
+SERVE_FRONTEND = os.getenv("JCI_SERVE_FRONTEND", "").lower() in ("1", "true", "yes")
+
+if (FRONTEND_DIST_DIR / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST_DIR / "assets")), name="frontend-assets")
+
+
+def _welcome_payload():
     return {
         "app": settings.PROJECT_NAME,
         "version": settings.VERSION,
@@ -96,3 +107,15 @@ async def root():
         "status": "online",
         "mode": "Phase 1: Local-First MVP",
     }
+
+
+@app.get("/api/info", summary="API Metadata Endpoint")
+async def api_info():
+    return _welcome_payload()
+
+
+@app.get("/", summary="Root Welcome / Frontend Entrypoint")
+async def root():
+    if SERVE_FRONTEND and FRONTEND_INDEX.exists():
+        return FileResponse(str(FRONTEND_INDEX))
+    return _welcome_payload()

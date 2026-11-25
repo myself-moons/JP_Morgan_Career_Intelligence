@@ -1,0 +1,30 @@
+# Version control & IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Python virtual environments & caches
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Frontend dependencies & build artifacts (built cleanly inside Stage 1)
+frontend/node_modules/
+node_modules/
+frontend/dist/
+
+# Local runtime state & secrets (mount via volumes or env-file at runtime)
+.env
+.env.*
+data/*.db
+data/*.sqlite*
+data/backups/
+uploads/*
+!uploads/.gitkeep
+jci_data/
+*.log
