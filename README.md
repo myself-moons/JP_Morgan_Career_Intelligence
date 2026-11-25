@@ -111,26 +111,6 @@ This platform is architected to mirror the exact functional competencies evaluat
 | **Comparative & Exploratory Data Analysis (EDA)** *(Asset & Wealth Management / FP&A)* | • **Cross-Role Matrix & Distribution:** Computes distinct-job frequency percentages across 3 functional Role Families (Family A: Governance/DQ, Family B: Analytics/AI, Family C: Finance/Operations). |
 | **Pipeline Orchestration & Alerting** *(Global Research Modernization)* | • **Automated Scheduled Execution:** GitHub Actions cron running daily at 08:30 IST to trigger sync pipelines, rank matches, and deliver executive HTML/Markdown digests via Gmail SMTP. |
 
-### How to Feature This Project on Your Resume
-
-Depending on the specific role you are targeting, here are recommended bullet points:
-
-#### Option A: For Data Analyst / Business Analytics Associate Roles
-> **JPMorgan Chase Labor Market Analytics & Requirement Intelligence Platform**
-> - **Engineered an automated data pipeline** ingesting and cleaning 100+ live JPMorgan Chase job descriptions via Oracle Cloud REST APIs, extracting structured requirements across technical, domain, and experience dimensions.
-> - **Designed a comparative analytics engine** computing distinct-job skill coverage and cross-role matrix distributions across 3 functional banking families, enforcing data quality rules to exclude unavailable records from statistical denominators ($N=10$).
-> - **Developed an interactive analytics dashboard** featuring dynamic filtering by role family, requirement severity (Must-Have vs. Nice-to-Have), and click-to-inspect data lineage modals.
-> - **Automated daily pipeline orchestration** via GitHub Actions cron, publishing scheduled executive digests and alerting with zero manual intervention.
-> - **Tech Stack:** *Python, FastAPI, SQLite, Pandas/NumPy, React, TypeScript, REST APIs, GitHub Actions, Pytest.*
-
-#### Option B: For Chief Data Office (CDO) / Data Governance Roles
-> **Enterprise Competency Taxonomy & Data Quality Governance Framework**
-> - **Architected a master data management (MDM) taxonomy engine** resolving 60+ unstructured aliases, synonyms, and variations into 35+ canonical banking and analytics competencies with deterministic regex word-boundary logic.
-> - **Implemented strict data governance controls and full data lineage**, guaranteeing that 100% of extracted requirements are permanently linked to immutable verbatim source evidence snippets.
-> - **Integrated a hybrid disambiguation pipeline** utilizing Google Gemini Flash LLM adapter for semantic edge-case classification, backed by an offline heuristic fallback and SQLite SHA-256 fingerprint caching.
-> - **Established automated data quality validation rules (BR-01 to BR-15)**, preventing composite score skewing and isolating formal educational prerequisites into distinct eligibility metrics.
-> - **Tech Stack:** *Python, SQL, SQLite, PyMuPDF, Data Governance (BCBS 239/Lineage principles), REST APIs, Pytest.*
-
 ---
 
 ## 📊 Role Families & Baseline Research Dataset
