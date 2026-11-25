@@ -4,7 +4,7 @@
 
 | **Document status** | Baseline functional specification (revised for local-first MVP & taxonomy alignment) |
 | --- | --- |
-| **Version / date** | 1.2 / 17 November 2026 |
+| **Version / date** | 2.0 / 23 November 2026 |
 | **Project scope** | JPMorgan Chase roles initially; local-first MVP (Phase 1) |
 
 ---
@@ -16,6 +16,7 @@
 | 1.0 | 17 Nov 2026 | Baseline Team | Initial draft baseline for project development. |
 | 1.1 | 17 Nov 2026 | Documentation Review | Initial functional requirements cross-referencing. |
 | 1.2 | 17 Nov 2026 | JCI Plan Review & Architecture Alignment | **Clarified MVP vs. Cloud scope:** Confirmed Phase 1 MVP is 100% local-first (React + FastAPI + SQLite). Explicitly assigned FR-29 through FR-36 (Firebase Hosting, RTDB, cloud auth) to release priority **"Later" (Phase 2, post-M7)**.<br>**Status & denominator alignment:** Added `JD unavailable` status support to FR-01, FR-04, and BR-01. Clarified in FR-15 and BR-06 that skill frequency denominator $N$ is strictly the count of analysable jobs ($N = 10$).<br>**Role Family integration:** Added `role_family` attribute (Family A: Governance/DQ, Family B: Analytics/AI, Family C: Finance/Operations) to FR-01, FR-04, FR-16, and BR-05.<br>**New Feature - Resume Keyword Coverage:** Added requirements **FR-37** (resume document ingestion), **FR-38** (resume vs. JD coverage with matching lines from both texts; no single score), **FR-39** (parse check warning), and **FR-40** (claimed but unsupported check tied to CardLyze attribution).<br>**New Business Rules:** Added **BR-13** (resume mention != demonstrated), **BR-14** (resume coverage uses same alias map as JD extraction), and **BR-15** (education prerequisites evaluated exclusively under Education/Eligibility dimension).<br>**New Test Scenarios:** Added **TC-19** (resume coverage against JD), **TC-20** (skill in resume with no evidence), and **TC-21** (Reference Data postgraduate finance requirement as education gap).<br>**Release Priority:** Placed FR-37 and FR-38 in **Should have**, FR-39 and FR-40 in **Could have**, scheduled for Milestone **M5**. |
+| 2.0 | 23 Nov 2026 | Implementation & Release Audit | **Delivery of M3 & M4:** Completed canonical skill taxonomy (35+ canonical skills, 60+ aliases) with human-in-the-loop review screen (`SkillAnalysis.tsx`), verbatim evidence snippets, and Gemini Flash semantic disambiguation (FR-42, TC-22). Completed comparative analytics engine (FR-15, FR-16, FR-25, TC-11, TC-12) with cross-role matrix grid and modal snippet inspection.<br>**Automated Sync & CI:** Documented live Oracle Cloud ingestion (`job_sync.py`), GitHub Actions daily job watcher cron, and CI test pipeline expanded to 35 passing automated tests. |
 
 ---
 

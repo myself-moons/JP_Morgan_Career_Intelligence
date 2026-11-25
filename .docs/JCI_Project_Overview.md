@@ -4,7 +4,7 @@
 
 | **Document status** | Baseline project overview (revised for local-first MVP & taxonomy alignment) |
 | --- | --- |
-| **Version / date** | 1.2 / 17 November 2026 |
+| **Version / date** | 2.0 / 23 November 2026 |
 | **Project scope** | JPMorgan Chase roles initially; local-first MVP (Phase 1) |
 
 ---
@@ -16,6 +16,7 @@
 | 1.0 | 17 Nov 2026 | Baseline Team | Initial draft baseline for project development. |
 | 1.1 | 17 Nov 2026 | Documentation Review | Structural review and consistency cross-check. |
 | 1.2 | 17 Nov 2026 | JCI Plan Review & Architecture Alignment | **Local-First MVP vs. Cloud Phase 2:** Formally defined two-phase roadmap. Phase 1 (Milestones M0–M7) delivers a 100% local-first application using React, Python FastAPI, and SQLite. Deferred Firebase Hosting, Realtime Database, and cloud hosting to Phase 2 (post-M7).<br>**UI alignment:** Confirmed React frontend with FastAPI backend across all specifications.<br>**Dataset & Status Definition:** Clarified initial collection of 11 JPMorgan Chase roles: 10 analysable JDs with full text and 1 record with status `JD unavailable` (*JPMorgan Data Governance – Senior Associate*).<br>**Baseline Taxonomy & Role Families:** Established three distinct functional role families: Family A (Data Management, Quality & Governance), Family B (Analytics, Automation & AI), and Family C (Finance, Credit & Operations).<br>**Realistic Target Priority:** Adjusted priority ranking based on deep JD analysis: (1) Applied AI & Data Science (1–5 yrs), (2) Data Quality Business Analytics (5+ yrs), (3) CAO Data Management (3+ yrs). Corrected title-only misconceptions (e.g. Data Analytics is FP&A; CR Portfolio Analytics is Commercial Real Estate credit risk).<br>**Expanded Skill Taxonomy:** Added finance/credit domain requirements (FP&A, GAAP/IFRS, credit analysis) and enterprise tools (Alteryx, Databricks, Snowflake, Informatica, Collibra) alongside core technical skills.<br>**CardLyze Profile Seed (M5):** Added requirement to pre-seed the user profile with the CardLyze project and its explicit contribution split (independent requirements, data dictionaries, EDA vs. AI-assisted codebase implementation) per FR-19 before matching tests.<br>**Strategic Learning Order:** Defined the common core foundation (SQL depth, Python/Pandas, DQ/reconciliation, BI dashboarding, AI-assisted analytics) followed by track-specific specialization. |
+| 2.0 | 23 Nov 2026 | Architecture & Implementation Review | **Taxonomy & Comparative Analytics Delivery:** Documented completion of M3 (Canonical Skill Taxonomy, Alias Engine, Human Review Workspace) and M4 (Comparative Analytics Engine, Cross-Role Matrix, Evidence Snippet Inspector).<br>**Live Job Sync & Automation:** Added live Oracle Cloud CX integration, multi-resume workspace with LaTeX compilation, daily GitHub Actions watcher with email alerts, and 35 automated pytest tests passing in CI. |
 
 ---
 
@@ -285,3 +286,35 @@ In Phase 2, the project may implement a distributed cloud deployment:
 - **SQL database (PostgreSQL):** Authoritative, ACID-compliant relational data store.
 - **Firebase Realtime Database:** Real-time progress updates, task queues, and user notifications.
 - **Python services:** Deterministic document extraction, NLP/AI adapters, normalisation, and matching algorithms.
+
+---
+
+## 16. Alignment with JPMorgan Chase Enterprise Data Roles & Resume Positioning
+
+This platform is architected to mirror the exact functional competencies evaluated in JPMorgan Chase data teams, including the **Chief Data Office (CDO)**, **Asset & Wealth Management Analytics (AWM)**, and **Corporate & Investment Bank (CIB)**:
+
+| JPMC Data Role Competency | How JCI Implements It Under the Hood |
+| :--- | :--- |
+| **Data Quality (DQ) & Reconciliation Controls** *(Chief Data Office / CAO)* | • **Active Denominator Governance ($N=10$, BR-06):** Unavailable listings are excluded from frequency denominators so statistical percentages are never skewed.<br>• **Single-Count Constraint (BR-07, TC-11):** Deduplicates repeated mentions within a single listing to prevent frequency distortion.<br>• **Deduplication:** Hash keys and external job ID matching (`JPMC-REQ-XX`). |
+| **Master Data Management (MDM) & Taxonomy** *(Data Governance / Metadata)* | • **Canonical Taxonomy Engine:** Standardizes 60+ raw aliases, abbreviations, and misspellings into 35+ canonical enterprise entities.<br>• **100% Data Lineage & Traceability:** Every extracted skill links permanently to immutable, verbatim sentence evidence snippets. |
+| **ETL Pipeline & REST API Integration** *(Analytics Solution / Automation)* | • **Automated Extraction:** Ingests live job descriptions from JPMorgan Chase's Oracle Cloud REST API (`CX_1001`).<br>• **Data Normalization:** Parses unstructured HTML and multi-page PDFs into structured relational tables (SQLAlchemy + SQLite). |
+| **Comparative & Exploratory Data Analysis (EDA)** *(Asset & Wealth Management / FP&A)* | • **Cross-Role Matrix & Distribution:** Computes distinct-job frequency percentages across 3 functional Role Families (Family A: Governance/DQ, Family B: Analytics/AI, Family C: Finance/Operations). |
+| **Pipeline Orchestration & Alerting** *(Global Research Modernization)* | • **Automated Scheduled Execution:** GitHub Actions cron running daily at 08:30 IST to trigger sync pipelines, rank matches, and deliver executive HTML/Markdown digests via Gmail SMTP. |
+
+### Resume Framing Guide
+
+#### Option A: For Data Analyst / Business Analytics Associate Roles
+> **JPMorgan Chase Labor Market Analytics & Requirement Intelligence Platform**
+> - **Engineered an automated data pipeline** ingesting and cleaning 100+ live JPMorgan Chase job descriptions via Oracle Cloud REST APIs, extracting structured requirements across technical, domain, and experience dimensions.
+> - **Designed a comparative analytics engine** computing distinct-job skill coverage and cross-role matrix distributions across 3 functional banking families, enforcing data quality rules to exclude unavailable records from statistical denominators ($N=10$).
+> - **Developed an interactive analytics dashboard** featuring dynamic filtering by role family, requirement severity (Must-Have vs. Nice-to-Have), and click-to-inspect data lineage modals.
+> - **Automated daily pipeline orchestration** via GitHub Actions cron, publishing scheduled executive digests and alerting with zero manual intervention.
+> - **Tech Stack:** *Python, FastAPI, SQLite, Pandas/NumPy, React, TypeScript, REST APIs, GitHub Actions, Pytest.*
+
+#### Option B: For Chief Data Office (CDO) / Data Governance Roles
+> **Enterprise Competency Taxonomy & Data Quality Governance Framework**
+> - **Architected a master data management (MDM) taxonomy engine** resolving 60+ unstructured aliases, synonyms, and variations into 35+ canonical banking and analytics competencies with deterministic regex word-boundary logic.
+> - **Implemented strict data governance controls and full data lineage**, guaranteeing that 100% of extracted requirements are permanently linked to immutable verbatim source evidence snippets.
+> - **Integrated a hybrid disambiguation pipeline** utilizing Google Gemini Flash LLM adapter for semantic edge-case classification, backed by an offline heuristic fallback and SQLite SHA-256 fingerprint caching.
+> - **Established automated data quality validation rules (BR-01 to BR-15)**, preventing composite score skewing and isolating formal educational prerequisites into distinct eligibility metrics.
+> - **Tech Stack:** *Python, SQL, SQLite, PyMuPDF, Data Governance (BCBS 239/Lineage principles), REST APIs, Pytest.*

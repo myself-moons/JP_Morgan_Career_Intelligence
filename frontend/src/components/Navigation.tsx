@@ -42,7 +42,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
       id: 'profile',
       label: 'Profile & Resume',
       icon: <UserCheck className="w-4 h-4" />,
-      badge: 'FR-37/38',
+      badge: 'Keywords',
     },
     {
       id: 'learning',
@@ -51,8 +51,9 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
     },
     {
       id: 'db_console',
-      label: 'DB Console (FR-41)',
+      label: 'Database Console',
       icon: <Database className="w-4 h-4" />,
+      badge: 'SQL',
     },
   ];
 
@@ -66,21 +67,19 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg transition whitespace-nowrap ${
-                  isActive
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-lg transition whitespace-nowrap ${isActive
                     ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 <span>{item.icon}</span>
                 <span>{item.label}</span>
                 {item.badge && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                      isActive
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${isActive
                         ? 'bg-blue-200 text-blue-800'
                         : 'bg-slate-100 text-slate-600'
-                    }`}
+                      }`}
                   >
                     {item.badge}
                   </span>

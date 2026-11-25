@@ -288,11 +288,10 @@ export const SkillAnalysis: React.FC = () => {
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold border transition-all ${
-            notification.type === 'success'
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold border transition-all ${notification.type === 'success'
               ? 'bg-emerald-950 text-emerald-200 border-emerald-800'
               : 'bg-rose-950 text-rose-200 border-rose-800'
-          }`}
+            }`}
         >
           {notification.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
           <span>{notification.message}</span>
@@ -307,9 +306,9 @@ export const SkillAnalysis: React.FC = () => {
               <FileSearch className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">Skill Extraction & Taxonomy Review</h1>
+              <h1 className="text-xl font-bold text-slate-900">Skill Taxonomy & Review</h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                Milestone M3: Canonical skill taxonomy, alias resolution, and human-in-the-loop review interface (FR-11 to FR-14, FR-42).
+                Explore skills identified in JPMorgan Chase job descriptions, approve or correct matches, and view real sentence evidence.
               </p>
             </div>
           </div>
@@ -319,25 +318,23 @@ export const SkillAnalysis: React.FC = () => {
         <div className="flex items-center p-1 bg-slate-200/80 rounded-xl border border-slate-300/80 self-start">
           <button
             onClick={() => setActiveView('review')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-              activeView === 'review'
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeView === 'review'
                 ? 'bg-white text-blue-700 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Job Skill Review (Human-in-the-Loop)</span>
+            <span>Review Role Skills</span>
           </button>
           <button
             onClick={() => setActiveView('taxonomy')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-              activeView === 'taxonomy'
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeView === 'taxonomy'
                 ? 'bg-white text-blue-700 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <Tag className="w-3.5 h-3.5" />
-            <span>Canonical Taxonomy & Aliases</span>
+            <span>Standard Skills Dictionary</span>
           </button>
         </div>
       </div>
@@ -386,16 +383,16 @@ export const SkillAnalysis: React.FC = () => {
                   title="Batch extract skills across all available jobs in the library"
                 >
                   <Layers className={`w-3.5 h-3.5 ${batchExtracting ? 'animate-spin' : ''}`} />
-                  <span>{batchExtracting ? 'Batching...' : 'Batch Extract All (N=10)'}</span>
+                  <span>{batchExtracting ? 'Batching...' : 'Scan All Jobs (N=10)'}</span>
                 </button>
 
                 <button
                   onClick={() => setIsDisambiguateOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold shadow-sm transition"
-                  title="Use Gemini AI to map an ambiguous phrase to a canonical skill (FR-42, TC-22)"
+                  title="Use Gemini AI to map an ambiguous phrase to a standard skill"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  <span>AI Disambiguate</span>
+                  <span>AI Skill Helper</span>
                 </button>
 
                 <button
@@ -446,11 +443,10 @@ export const SkillAnalysis: React.FC = () => {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${
-                    selectedCategory === cat
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${selectedCategory === cat
                       ? 'bg-blue-600 text-white font-semibold shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
@@ -505,19 +501,18 @@ export const SkillAnalysis: React.FC = () => {
                   record.review_status === 'Accepted'
                     ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                     : record.review_status === 'Rejected'
-                    ? 'bg-rose-100 text-rose-800 border-rose-300'
-                    : record.review_status === 'Edited'
-                    ? 'bg-purple-100 text-purple-800 border-purple-300'
-                    : 'bg-amber-100 text-amber-800 border-amber-300';
+                      ? 'bg-rose-100 text-rose-800 border-rose-300'
+                      : record.review_status === 'Edited'
+                        ? 'bg-purple-100 text-purple-800 border-purple-300'
+                        : 'bg-amber-100 text-amber-800 border-amber-300';
 
                 return (
                   <div
                     key={record.id}
-                    className={`bg-white rounded-xl border p-4 shadow-xs transition hover:shadow-sm space-y-3 ${
-                      record.review_status === 'Rejected'
+                    className={`bg-white rounded-xl border p-4 shadow-xs transition hover:shadow-sm space-y-3 ${record.review_status === 'Rejected'
                         ? 'opacity-60 border-slate-200 bg-slate-50/50'
                         : 'border-slate-200'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -543,11 +538,10 @@ export const SkillAnalysis: React.FC = () => {
                               requirement_type: isRequired ? 'Preferred' : 'Required',
                             })
                           }
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer ${
-                            isRequired
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded border transition cursor-pointer ${isRequired
                               ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
                               : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                          }`}
+                            }`}
                           title="Click to toggle between Required and Preferred"
                         >
                           {record.requirement_type}
@@ -583,11 +577,10 @@ export const SkillAnalysis: React.FC = () => {
                         {/* Accept Button */}
                         <button
                           onClick={() => handleReviewSkill(record.id, { review_status: 'Accepted' })}
-                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition flex items-center gap-1 ${
-                            record.review_status === 'Accepted'
+                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition flex items-center gap-1 ${record.review_status === 'Accepted'
                               ? 'bg-emerald-600 text-white shadow-xs'
                               : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                          }`}
+                            }`}
                           title="Approve extraction (Accept)"
                         >
                           <Check className="w-3 h-3" />
@@ -597,11 +590,10 @@ export const SkillAnalysis: React.FC = () => {
                         {/* Reject Button */}
                         <button
                           onClick={() => handleReviewSkill(record.id, { review_status: 'Rejected' })}
-                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition flex items-center gap-1 ${
-                            record.review_status === 'Rejected'
+                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition flex items-center gap-1 ${record.review_status === 'Rejected'
                               ? 'bg-rose-600 text-white shadow-xs'
                               : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-                          }`}
+                            }`}
                           title="Reject spurious detection"
                         >
                           <X className="w-3 h-3" />
@@ -647,11 +639,10 @@ export const SkillAnalysis: React.FC = () => {
                 <button
                   key={cat}
                   onClick={() => setTaxCategory(cat)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${
-                    taxCategory === cat
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${taxCategory === cat
                       ? 'bg-blue-600 text-white font-semibold shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
