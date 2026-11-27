@@ -24,9 +24,14 @@ let initializedClientId: string | null = null;
 interface GoogleLoginGateProps {
   clientId: string;
   onSuccess: (user: AuthUser) => void;
+  embedded?: boolean;
 }
 
-export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({ clientId, onSuccess }) => {
+export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({
+  clientId,
+  onSuccess,
+  embedded = false,
+}) => {
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
@@ -84,6 +89,32 @@ export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({ clientId, onSu
     document.head.appendChild(script);
   }, [clientId]);
 
+  const authBody = (
+    <>
+      {!clientId ? (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2 text-left">
+          <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>Missing GOOGLE_CLIENT_ID in environment configuration.</span>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-2.5">
+          <div ref={buttonRef} className="min-h-[44px]" />
+          {signingIn && <span className="text-xs text-slate-500">Verifying session...</span>}
+        </div>
+      )}
+
+      {error && (
+        <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+          {error}
+        </div>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-3">{authBody}</div>;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center space-y-5">
@@ -96,24 +127,7 @@ export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({ clientId, onSu
             Sign in with Google to access your private Experience Vault, Resumes, and Roadmap.
           </p>
         </div>
-
-        {!clientId ? (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2 text-left">
-            <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>Missing GOOGLE_CLIENT_ID in environment configuration.</span>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3">
-            <div ref={buttonRef} className="min-h-[44px]" />
-            {signingIn && <span className="text-xs text-slate-500">Verifying session...</span>}
-          </div>
-        )}
-
-        {error && (
-          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
-            {error}
-          </div>
-        )}
+        {authBody}
       </div>
     </div>
   );

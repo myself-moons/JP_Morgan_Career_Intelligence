@@ -1,4 +1,11 @@
+import os
 import pytest
+
+# Always run pytest against an isolated local SQLite test database unless explicitly opted out,
+# preventing accidental test mutations against production PostgreSQL in .env.
+if os.getenv("JCI_TEST_USE_ENV_DB", "").lower() not in ("1", "true", "yes"):
+    os.environ["DATABASE_URL"] = "sqlite:///./data/jci_test.db"
+
 from app.core.auth import get_current_user, get_or_create_local_dev_user
 from app.core.database import SessionLocal, init_db
 from app.main import app

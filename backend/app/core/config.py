@@ -55,8 +55,9 @@ class Settings:
     VERSION: str = "3.0.0"
     API_PREFIX: str = "/api"
 
-    # Server host & port configuration (supports cloud $PORT)
-    HOST: str = os.getenv("JCI_HOST", "127.0.0.1")
+    # Server host & port configuration (supports Cloud Run $PORT)
+    IS_CLOUD_RUN: bool = bool(os.getenv("K_SERVICE", "").strip())
+    HOST: str = os.getenv("JCI_HOST", "0.0.0.0" if os.getenv("K_SERVICE") else "127.0.0.1")
     PORT: int = int(os.getenv("PORT", os.getenv("JCI_PORT", "8000")))
     DB_CONSOLE_PORT: int = int(os.getenv("JCI_DB_CONSOLE_PORT", "8080"))
 
@@ -72,7 +73,10 @@ class Settings:
         "JCI_AUTH_REQUIRED",
         "true" if os.getenv("GOOGLE_CLIENT_ID", "").strip() else "false",
     ).strip().lower() in ("1", "true", "yes")
-    COOKIE_SECURE: bool = os.getenv("JCI_COOKIE_SECURE", "false").strip().lower() in (
+    COOKIE_SECURE: bool = os.getenv(
+        "JCI_COOKIE_SECURE",
+        "true" if os.getenv("K_SERVICE") else "false",
+    ).strip().lower() in (
         "1",
         "true",
         "yes",

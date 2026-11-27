@@ -51,15 +51,17 @@ export const Header: React.FC<HeaderProps> = ({
               <StatusBadge health={health} loading={loading} error={error} />
             </button>
 
-            <a
-              href="http://127.0.0.1:8080"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden md:inline-flex items-center p-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-              title="Local SQLite Console"
-            >
-              <Database className="w-4 h-4 text-amber-400" />
-            </a>
+            {health?.environment === 'local' && health?.database === 'sqlite' && (
+              <a
+                href={health.db_console_url || 'http://127.0.0.1:8080'}
+                target="_blank"
+                rel="noreferrer"
+                className="hidden md:inline-flex items-center p-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                title="Local SQLite Console"
+              >
+                <Database className="w-4 h-4 text-amber-400" />
+              </a>
+            )}
 
             {user && (
               <div className="flex items-center gap-2 pl-2 border-l border-slate-700">

@@ -9,11 +9,11 @@ from app.models.entities import User
 from app.services.export_service import (
     export_coverage_data,
     export_jobs_data,
-    export_learning_data,
     export_matrix_data,
+    export_roadmap_data,
 )
 
-router = APIRouter(prefix="/exports", tags=["CSV & Excel Exports (M7)"])
+router = APIRouter(prefix="/exports", tags=["CSV & Excel Exports"])
 
 
 @router.get("/jobs", summary="Export filtered job listings to CSV or Excel (FR-26)")
@@ -73,15 +73,16 @@ def export_matrix(
     )
 
 
-@router.get("/learning", summary="Export learning tracker & progress to CSV or Excel (FR-26)")
-def export_learning(
+@router.get("/roadmap", summary="Export user's My Roadmap & saved resources to CSV or Excel")
+@router.get("/learning", summary="Export user's My Roadmap & saved resources to CSV or Excel (alias)")
+def export_roadmap(
     format: str = Query("csv", description="Export format: csv or xlsx"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    content, media_type, ext = export_learning_data(db, fmt=format)
+    content, media_type, ext = export_roadmap_data(db, user_id=current_user.id, fmt=format)
     return Response(
         content=content,
         media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="jci_learning_tracker.{ext}"'},
+        headers={"Content-Disposition": f'attachment; filename="jci_my_roadmap.{ext}"'},
     )

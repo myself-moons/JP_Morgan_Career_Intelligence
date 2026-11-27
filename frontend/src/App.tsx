@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
-import { GoogleLoginGate } from './components/GoogleLoginGate';
+import { LandingPage } from './components/LandingPage';
 import { Dashboard } from './pages/Dashboard';
 import { JobLibrary } from './pages/JobLibrary';
 import { SkillExplorer } from './pages/SkillExplorer';
@@ -70,8 +70,10 @@ export const App: React.FC = () => {
 
   if (authConfig?.auth_required && !user) {
     return (
-      <GoogleLoginGate
+      <LandingPage
         clientId={authConfig.google_client_id}
+        version={authConfig.version}
+        health={health}
         onSuccess={(signedUser) => setUser(signedUser)}
       />
     );

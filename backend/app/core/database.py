@@ -11,6 +11,11 @@ engine_kwargs = {
 if is_sqlite:
     # check_same_thread=False is SQLite-only; PostgreSQL rejects it
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Cloud Run + managed/serverless PostgreSQL (Neon / Cloud SQL) pool resilience
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 10
+    engine_kwargs["pool_recycle"] = 300
 
 engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
 

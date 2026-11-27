@@ -30,7 +30,6 @@ if str(BACKEND_DIR) not in sys.path:
 from app.core.database import SessionLocal, init_db
 from app.models.entities import JobListing, ResumeDocument
 from app.core.seed import seed_baseline_jobs
-from app.services.resume_service import seed_resumes, get_all_resumes
 from app.services.job_sync import sync_jpmc_jobs
 from app.services.llm_matcher import explainable_resume_match
 
@@ -248,13 +247,15 @@ def main():
     db = SessionLocal()
 
     try:
-        # Ensure resumes exist in DB
-        resumes = get_all_resumes(db)
+        # Fetch active resume stored in database
+        resumes = (
+            db.query(ResumeDocument)
+            .order_by(ResumeDocument.is_active.desc(), ResumeDocument.id.desc())
+            .all()
+        )
         if not resumes:
-            resumes = seed_resumes(db)
-        if not resumes:
-            print("Error: No resumes found in resumes/ directory!")
-            sys.exit(1)
+            print("No uploaded resumes found in database; skipping resume evaluation.")
+            return
 
         active_resume = next((r for r in resumes if r.is_active == 1), resumes[0])
         print(f"Active Resume: {active_resume.name} (ID: {active_resume.id})")
@@ -272,7 +273,7 @@ def main():
         else:
             jobs_to_eval = db.query(JobListing).filter(JobListing.status.in_(["Discovered", "Available"])).all()
 
-        resume_text = active_resume.raw_text or active_resume.latex_source or ""
+        resume_text = active_resume.raw_text or ""
 
         # 4. Evaluate each role against active resume
         print(f"Evaluating {len(jobs_to_eval)} jobs against active resume profile...")

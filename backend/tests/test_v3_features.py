@@ -423,12 +423,11 @@ def test_security_lockdown_privilege_boundaries_and_rate_limiting():
             for method, path, body in [
                 ("GET", "/api/exports/jobs", None),
                 ("GET", "/api/exports/coverage", None),
+                ("GET", "/api/exports/roadmap", None),
                 ("GET", "/api/taxonomy/skills", None),
                 ("POST", "/api/taxonomy/ai-disambiguate", {"phrase": "Py"}),
                 ("GET", "/api/jobs/next-code", None),
                 ("POST", "/api/jobs/parse-text", {"text": "Sample job description text"}),
-                ("GET", "/api/profile", None),
-                ("GET", "/api/learning/resources", None),
             ]:
                 resp = client.request(method, path, json=body)
                 assert resp.status_code == 401, f"{method} {path} returned {resp.status_code}"
@@ -453,9 +452,9 @@ def test_security_lockdown_privilege_boundaries_and_rate_limiting():
                 assert client.put(f"/api/jobs/{baseline_job.id}", json={"title": "Hacked"}).status_code == 403
                 assert client.delete(f"/api/jobs/{baseline_job.id}").status_code == 403
 
-            # Legacy v2 & global admin endpoints blocked (403)
-            assert client.get("/api/profile").status_code == 403
-            assert client.get("/api/learning/resources").status_code == 403
+            # Retired legacy v2 endpoints are removed (404) & global admin endpoints blocked (403)
+            assert client.get("/api/profile").status_code == 404
+            assert client.get("/api/learning/resources").status_code == 404
             assert client.post("/api/jobs/seed").status_code == 403
             assert client.post("/api/taxonomy/skills", json={"canonical_name": "UnauthorizedSkill"}).status_code == 403
             assert client.post("/api/taxonomy/jobs/batch-extract-skills").status_code == 403

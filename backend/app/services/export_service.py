@@ -4,9 +4,8 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-from app.models.entities import JobListing
+from app.models.entities import JobListing, RoadmapItem
 from app.services.analytics_service import compute_cross_role_matrix, compute_skill_coverage
-from app.services.learning_service import list_learning_resources
 
 
 def _rows_to_bytes(rows: List[Dict], sheet_name: str, fmt: str) -> Tuple[bytes, str, str]:
@@ -127,24 +126,25 @@ def export_matrix_data(db: Session, fmt: str = "csv") -> Tuple[bytes, str, str]:
     return _rows_to_bytes(rows, "JCI_Cross_Role_Matrix", fmt)
 
 
-def export_learning_data(db: Session, fmt: str = "csv") -> Tuple[bytes, str, str]:
-    resources = list_learning_resources(db)
+def export_roadmap_data(db: Session, user_id: int, fmt: str = "csv") -> Tuple[bytes, str, str]:
+    items = (
+        db.query(RoadmapItem)
+        .filter(RoadmapItem.user_id == user_id)
+        .order_by(RoadmapItem.sort_order.asc(), RoadmapItem.id.asc())
+        .all()
+    )
     rows = [
         {
-            "ID": r.id,
-            "Provider": r.provider,
-            "Title": r.title,
-            "Skills Addressed": ", ".join(r.skills_addressed),
-            "Cost Status": r.cost_status,
-            "Certificate": "Yes" if r.has_certificate else "No",
-            "Duration": r.duration or "",
-            "Progress Status": r.progress_status,
-            "Started Date": r.started_at or "",
-            "Completed Date": r.completed_at or "",
-            "Verification Date": r.verification_date,
-            "Notes": r.notes or "",
-            "URL": r.url or "",
+            "ID": item.id,
+            "Canonical Skill": item.skill_name,
+            "Priority": item.priority,
+            "Status": item.status,
+            "Goal Note": item.goal_note or "",
+            "Saved Resources": "; ".join(f"{r.title} ({r.url})" for r in (item.resources or [])),
+            "Updated At": item.updated_at.isoformat() if item.updated_at else "",
         }
-        for r in resources
+        for item in items
     ]
-    return _rows_to_bytes(rows, "JCI_Learning_Tracker", fmt)
+    if not rows:
+        rows = [{"ID": "", "Canonical Skill": "No roadmap items yet", "Priority": "", "Status": ""}]
+    return _rows_to_bytes(rows, "JCI_My_Roadmap", fmt)

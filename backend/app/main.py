@@ -11,8 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import SessionLocal, init_db
 from app.core.seed import seed_baseline_jobs
-from app.models.entities import JobListing
-from app.services.taxonomy_service import seed_taxonomy_if_empty
+from app.models.entities import JobListing, JobSkill
+from app.services.taxonomy_service import batch_extract_all_jobs, seed_taxonomy_if_empty
 
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
@@ -20,8 +20,6 @@ from app.api.explorer import router as explorer_router
 from app.api.exports import router as exports_router
 from app.api.health import router as health_router
 from app.api.jobs import router as jobs_router
-from app.api.learning import router as learning_router
-from app.api.profile import router as profile_router
 from app.api.resumes import router as resumes_router
 from app.api.roadmap import router as roadmap_router
 from app.api.taxonomy import router as taxonomy_router
@@ -62,6 +60,8 @@ async def lifespan(app: FastAPI):
         if db.query(JobListing).count() == 0:
             seed_baseline_jobs(db)
         seed_taxonomy_if_empty(db)
+        if db.query(JobSkill).count() == 0:
+            batch_extract_all_jobs(db)
     finally:
         db.close()
 
@@ -151,8 +151,6 @@ for r in (
     vault_router,
     roadmap_router,
     exports_router,
-    profile_router,
-    learning_router,
 ):
     app.include_router(r, prefix=settings.API_PREFIX)
     app.include_router(r)
@@ -188,3 +186,19 @@ async def root():
     if SERVE_FRONTEND and FRONTEND_INDEX.exists():
         return FileResponse(str(FRONTEND_INDEX))
     return _welcome_payload()
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa_fallback(full_path: str):
+    if not (SERVE_FRONTEND and FRONTEND_INDEX.exists()):
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    if full_path.startswith(("api/", "api", "docs", "redoc", "openapi.json")):
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    candidate = (FRONTEND_DIST_DIR / full_path).resolve()
+    try:
+        candidate.relative_to(FRONTEND_DIST_DIR.resolve())
+    except ValueError:
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    if candidate.is_file():
+        return FileResponse(str(candidate))
+    return FileResponse(str(FRONTEND_INDEX))

@@ -6,8 +6,6 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import SessionLocal, init_db
 from app.core.seed import seed_baseline_jobs
-from app.services.learning_service import seed_learning_resources_if_empty
-from app.services.profile_service import seed_profile_if_empty
 from app.services.taxonomy_service import seed_taxonomy_if_empty, batch_extract_all_jobs
 from backup_db import backup_database
 from restore_db import restore_database
@@ -20,8 +18,6 @@ def setup_m7_data():
     seed_baseline_jobs(db)
     seed_taxonomy_if_empty(db)
     batch_extract_all_jobs(db)
-    seed_profile_if_empty(db)
-    seed_learning_resources_if_empty(db)
     db.close()
 
 
@@ -46,8 +42,8 @@ def test_tc18_export_filtered_coverage_csv_and_xlsx():
     assert len(df_xlsx) >= 10
 
 
-def test_export_jobs_matrix_and_learning():
-    """Verify FR-26 exports for Jobs, Cross-Role Matrix, and Learning Tracker."""
+def test_export_jobs_matrix_and_roadmap():
+    """Verify CSV/Excel exports for Jobs, Cross-Role Matrix, and My Roadmap."""
     client = TestClient(app)
 
     jobs_resp = client.get("/api/exports/jobs?format=csv")
@@ -58,9 +54,13 @@ def test_export_jobs_matrix_and_learning():
     assert matrix_resp.status_code == 200
     assert len(matrix_resp.content) > 500
 
-    learn_resp = client.get("/api/exports/learning?format=csv")
-    assert learn_resp.status_code == 200
-    assert "Provider" in learn_resp.text
+    roadmap_resp = client.get("/api/exports/roadmap?format=csv")
+    assert roadmap_resp.status_code == 200
+    assert "Canonical Skill" in roadmap_resp.text
+
+    learn_alias_resp = client.get("/api/exports/learning?format=csv")
+    assert learn_alias_resp.status_code == 200
+    assert "Canonical Skill" in learn_alias_resp.text
 
 
 def test_nfr09_database_backup_and_restore(tmp_path):
