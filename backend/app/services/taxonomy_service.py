@@ -541,3 +541,144 @@ def ai_disambiguate_skill(
         "rationale": best_rationale,
         "is_llm_powered": False,
     }
+
+
+def _clean_short_skill_name(raw_name: str) -> str:
+    """Strips filler prefixes and punctuation to keep canonical skill names short & clean."""
+    cleaned = re.sub(r"\s+", " ", (raw_name or "").strip())
+    cleaned = re.sub(
+        r"(?i)^(learn|learning|master|study|experience\s+with|knowledge\s+of|proficiency\s+in|build)\s+",
+        "",
+        cleaned,
+    ).strip(" .,:;-")
+    if len(cleaned) > 45:
+        # Take concise leading phrase if someone pasted a longer phrase
+        cleaned = cleaned[:45].rsplit(" ", 1)[0].strip(" .,:;-")
+    return cleaned
+
+
+def _normalize_key(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (text or "").lower())
+
+
+def suggest_canonical_skills(db: Session, query: str = "", limit: int = 12) -> List[Dict[str, Any]]:
+    """
+    Live typeahead autocomplete across all canonical skills and aliases (v3.0).
+    Always returns deduplicated canonical skills sorted by relevance & JD demand.
+    """
+    seed_taxonomy_if_empty(db)
+    skills = db.query(Skill).all()
+    aliases = db.query(SkillAlias).all()
+
+    # Precompute active job counts per skill
+    job_counts: Dict[int, int] = {}
+    for sid, jid in db.query(JobSkill.skill_id, JobSkill.job_id).filter(JobSkill.review_status != "Rejected").distinct().all():
+        job_counts[sid] = job_counts.get(sid, 0) + 1
+
+    aliases_by_skill: Dict[int, List[str]] = {}
+    for a in aliases:
+        aliases_by_skill.setdefault(a.skill_id, []).append(a.alias_text)
+
+    q = (query or "").strip().lower()
+    scored: List[Tuple[int, Dict[str, Any]]] = []
+
+    for s in skills:
+        cname = s.canonical_name
+        clower = cname.lower()
+        s_aliases = aliases_by_skill.get(s.id, [])
+        jcount = job_counts.get(s.id, 0)
+
+        if not q:
+            scored.append((jcount, {
+                "id": s.id,
+                "canonical_name": cname,
+                "category": s.category,
+                "matched_alias": None,
+                "job_count": jcount,
+            }))
+            continue
+
+        matched_alias: Optional[str] = None
+        rank = 0
+        if clower == q:
+            rank = 1000 + jcount
+        elif clower.startswith(q):
+            rank = 500 + jcount
+        elif q in clower:
+            rank = 250 + jcount
+        else:
+            for al in s_aliases:
+                if al == q:
+                    rank = 400 + jcount
+                    matched_alias = al
+                    break
+                if al.startswith(q) or q in al:
+                    rank = 150 + jcount
+                    matched_alias = al
+                    break
+
+        if rank > 0:
+            scored.append((rank, {
+                "id": s.id,
+                "canonical_name": cname,
+                "category": s.category,
+                "matched_alias": matched_alias,
+                "job_count": jcount,
+            }))
+
+    scored.sort(key=lambda item: (-item[0], item[1]["canonical_name"]))
+    return [item[1] for item in scored[:limit]]
+
+
+def resolve_or_create_canonical_skill(
+    raw_name: str,
+    db: Session,
+    category: str = "Technical",
+) -> Tuple[Skill, bool, str]:
+    """
+    Resolves user-typed skill text to an existing canonical skill (via canonical name,
+    alias, or normalized form) to avoid duplicates from alternate wordings.
+    Creates a new short canonical skill if genuinely absent so it is remembered globally.
+    Returns (skill, created_new, matched_via).
+    """
+    seed_taxonomy_if_empty(db)
+    cleaned = _clean_short_skill_name(raw_name)
+    if not cleaned:
+        raise ValueError("Skill name cannot be empty.")
+
+    norm_q = _normalize_key(cleaned)
+    all_skills = db.query(Skill).all()
+
+    # 1. Exact or normalized canonical match
+    for s in all_skills:
+        if s.canonical_name.lower() == cleaned.lower():
+            return s, False, "canonical_exact"
+        if norm_q and _normalize_key(s.canonical_name) == norm_q:
+            return s, False, "canonical_normalized"
+
+    # 2. Alias match (prevents duplicates like 'PostgreSQL' vs 'SQL' or 'MDM' vs 'Reference Data')
+    all_aliases = db.query(SkillAlias).all()
+    skill_by_id = {s.id: s for s in all_skills}
+    for a in all_aliases:
+        if a.alias_text.lower() == cleaned.lower() or (norm_q and _normalize_key(a.alias_text) == norm_q):
+            target = skill_by_id.get(a.skill_id)
+            if target:
+                return target, False, f"alias:{a.alias_text}"
+
+    # 3. Create genuinely new short canonical skill and register lowercase alias
+    title_name = cleaned if any(c.isupper() for c in cleaned) else cleaned.title()
+    new_skill = Skill(
+        canonical_name=title_name,
+        category=category or "Technical",
+        description="Added via workspace skill tagging.",
+    )
+    db.add(new_skill)
+    db.flush()
+
+    alias_lower = cleaned.lower()
+    if not db.query(SkillAlias).filter(SkillAlias.alias_text == alias_lower).first():
+        db.add(SkillAlias(skill_id=new_skill.id, alias_text=alias_lower))
+
+    db.commit()
+    db.refresh(new_skill)
+    return new_skill, True, "created"

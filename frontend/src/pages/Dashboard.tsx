@@ -1,684 +1,544 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  HealthStatus,
-  JobListResponse,
-  TopJobMatchesResponse,
-  CoverageResponse,
-  CrossRoleMatrixResponse,
+  ArrowRight,
+  BarChart3,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
+  FolderKanban,
+  Info,
+  Trophy,
+  X,
+} from 'lucide-react';
+import {
+  fetchDashboardSummary,
+  fetchJobById,
+  fetchSkillEvidence,
+  getExportCoverageUrl,
+} from '../services/api';
+import {
+  ActiveTab,
+  DashboardSummary,
+  Job,
   SkillCoverageItem,
   SkillEvidenceResponse,
 } from '../types';
-import {
-  fetchJobs,
-  fetchTopJobMatches,
-  fetchSkillCoverage,
-  fetchCrossRoleMatrix,
-  fetchSkillEvidence,
-  getExportCoverageUrl,
-  getExportMatrixUrl,
-} from '../services/api';
-import {
-  Briefcase,
-  CheckCircle2,
-  FileText,
-  Cpu,
-  Layers,
-  ArrowRight,
-  BarChart3,
-  Trophy,
-  Sparkles,
-  Table,
-  Grid,
-  Search,
-  Filter,
-  Eye,
-  X,
-  FileSearch,
-  Download,
-} from 'lucide-react';
+import { formatDateDDMMYYYY } from '../utils/date';
 
 interface DashboardProps {
-  health: HealthStatus | null;
-  onNavigate: (tab: any) => void;
+  onNavigate: (tab: ActiveTab) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ health: _health, onNavigate }) => {
-  const [jobStats, setJobStats] = useState<JobListResponse | null>(null);
-  const [topMatches, setTopMatches] = useState<TopJobMatchesResponse | null>(null);
+export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [jobLoading, setJobLoading] = useState<boolean>(false);
+  const [jobError, setJobError] = useState<string | null>(null);
+  const [scoreInfoPinned, setScoreInfoPinned] = useState<boolean>(false);
+  const [scoreInfoHover, setScoreInfoHover] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // M4 Analytics State
-  const [coverageData, setCoverageData] = useState<CoverageResponse | null>(null);
-  const [matrixData, setMatrixData] = useState<CrossRoleMatrixResponse | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(true);
-  const [selectedRoleFamily, setSelectedRoleFamily] = useState<string>('All');
-  const [analyticsViewMode, setAnalyticsViewMode] = useState<'table' | 'matrix'>('table');
-  const [skillSearch, setSkillSearch] = useState<string>('');
-
-  // Evidence Modal State
-  const [evidenceSkill, setEvidenceSkill] = useState<SkillCoverageItem | null>(null);
-  const [evidenceData, setEvidenceData] = useState<SkillEvidenceResponse | null>(null);
+  // Tap-to-inspect skill evidence sheet
+  const [activeSkill, setActiveSkill] = useState<SkillCoverageItem | null>(null);
+  const [evidence, setEvidence] = useState<SkillEvidenceResponse | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchJobs()
-      .then((data) => setJobStats(data))
-      .catch(() => {});
-
-    fetchTopJobMatches()
-      .then((data) => setTopMatches(data))
-      .catch(() => {});
+    setLoading(true);
+    fetchDashboardSummary()
+      .then((data) => setSummary(data))
+      .catch((err: any) => setError(err?.message || 'Failed to load dashboard'))
+      .finally(() => setLoading(false));
   }, []);
 
-  // Load M4 Coverage Data when role family or search changes
-  useEffect(() => {
-    setAnalyticsLoading(true);
-    fetchSkillCoverage({
-      role_family: selectedRoleFamily !== 'All' ? selectedRoleFamily : undefined,
-      search: skillSearch.trim() || undefined,
-    })
-      .then((data) => setCoverageData(data))
-      .catch(() => {})
-      .finally(() => setAnalyticsLoading(false));
-  }, [selectedRoleFamily, skillSearch]);
-
-  // Load Cross-Role Matrix Data when matrix view is active
-  useEffect(() => {
-    if (analyticsViewMode === 'matrix' && !matrixData) {
-      fetchCrossRoleMatrix()
-        .then((data) => setMatrixData(data))
-        .catch(() => {});
-    }
-  }, [analyticsViewMode, matrixData]);
-
-  // Open Evidence Modal for a specific skill
   const handleOpenEvidence = async (skill: SkillCoverageItem) => {
-    setEvidenceSkill(skill);
+    setActiveSkill(skill);
     setEvidenceLoading(true);
     try {
-      const data = await fetchSkillEvidence(skill.skill_id, 'Available');
-      setEvidenceData(data);
+      const ev = await fetchSkillEvidence(skill.skill_id, 'Available');
+      setEvidence(ev);
     } catch {
-      setEvidenceData(null);
+      setEvidence(null);
     } finally {
       setEvidenceLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="py-12 text-center text-xs sm:text-sm text-slate-500">
+        Loading recommendations and skills in demand...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-blue-950 rounded-xl p-6 text-white shadow-lg border border-slate-800">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center space-x-2 text-xs font-semibold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Skill Intelligence & Role Matcher Ready</span>
+      {/* 1. TOP RECOMMENDED ROLES (Vault -> Resume -> Empty Prompt) */}
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-xs">
+        <div className="p-4 sm:p-5 border-b border-slate-100 rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+              <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight">
-              JPMorgan Career Intelligence Platform
-            </h2>
-            <p className="text-slate-300 text-sm mt-1 max-w-2xl">
-              Explore JPMorgan Chase job openings, check your resume match with explainable AI,
-              and compare which skills matter most across different roles.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={() => onNavigate('skills')}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition shadow-sm"
-            >
-              <FileSearch className="w-4 h-4" />
-              <span>Explore Skills & Taxonomy</span>
-            </button>
-            <button
-              onClick={() => onNavigate('jobs')}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-white font-medium text-sm transition"
-            >
-              <span>View Job Openings ({jobStats ? jobStats.total_count : 11})</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Active Job Openings
-            </span>
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-              <Briefcase className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-slate-900">
-              {coverageData ? coverageData.analysable_count : 10}
-            </span>
-            <span className="text-xs text-slate-500">
-              / {jobStats ? jobStats.total_count : 11} Total Postings
-            </span>
-          </div>
-          <div className="mt-2 text-xs text-slate-500">
-            Full descriptions ready to analyze
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tracked Skills
-            </span>
-            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
-              <Cpu className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-slate-900">
-              {coverageData ? coverageData.skills.length : 35}+
-            </span>
-            <span className="text-xs text-emerald-700 font-semibold">
-              Standardized
-            </span>
-          </div>
-          <div className="mt-2 text-xs text-emerald-600 font-medium">
-            Across Data, Tech, Governance & Finance
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              AI Match Assistant
-            </span>
-            <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
-              <FileText className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-purple-950">Gemini Flash</span>
-          </div>
-          <div className="mt-2 text-xs text-slate-500">
-            Clear 3-way rubric: Tech, Domain & Seniority
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Daily Job Watcher
-            </span>
-            <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
-              <Layers className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-slate-900">08:30 IST</span>
-          </div>
-          <div className="mt-2 text-xs text-amber-600 font-medium">
-            Automated Daily Job Sync & Email Digest
-          </div>
-        </div>
-      </div>
-
-      {/* Top 5 Role Matches for Active Resume (Explainable AI Ranking) */}
-      {topMatches && topMatches.top_matches.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-blue-50/50 to-indigo-50/30">
-            <div className="flex items-center space-x-3">
-              <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-sm">
-                <Trophy className="w-5 h-5 text-amber-300" />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-base font-bold text-slate-900">
-                    Top 5 Recommended Roles for Your Resume
-                  </h3>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    <Sparkles className="w-3 h-3 text-emerald-600" />
-                    <span>Clear Match Breakdown</span>
-                  </span>
+            <div>
+              <div className="flex items-center gap-1.5 relative">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                  Top Recommended Roles
+                </h2>
+                <div
+                  className="relative inline-flex items-center"
+                  onMouseEnter={() => setScoreInfoHover(true)}
+                  onMouseLeave={() => setScoreInfoHover(false)}
+                >
+                  <button
+                    type="button"
+                    aria-label="How match scores work"
+                    aria-expanded={scoreInfoPinned || scoreInfoHover}
+                    onClick={() => setScoreInfoPinned((prev) => !prev)}
+                    className="p-0.5 rounded-full text-slate-400 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                  {(scoreInfoPinned || scoreInfoHover) && (
+                    <div
+                      role="dialog"
+                      aria-label="Scoring System Explanation"
+                      className="absolute left-0 sm:left-1/2 sm:-translate-x-1/4 top-full mt-2 z-40 w-72 sm:w-80 p-3.5 rounded-xl bg-white border border-slate-200 shadow-xl text-left space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-900">
+                          How Your Match Scores Work
+                        </span>
+                        {scoreInfoPinned && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScoreInfoPinned(false);
+                              setScoreInfoHover(false);
+                            }}
+                            className="text-slate-400 hover:text-slate-600 p-0.5"
+                            aria-label="Close score explanation"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        <span className="font-bold text-orange-600">Orange (Quick Estimate):</span>{' '}
+                        An instant automatic estimate based on matching skills, job wording, and career level — no AI usage required.
+                      </p>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        <span className="font-bold text-emerald-600">Green (AI Score):</span>{' '}
+                        Saved automatically when you run <strong>Compare with AI</strong> in your Experience Vault. AI checks deeper details like years of experience and specialized domain requirements.
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Ranked against active profile: <strong className="text-slate-700">{topMatches.active_resume_name}</strong>
-                </p>
               </div>
+              {summary && (
+                <p className="text-[11px] sm:text-xs text-slate-500">{summary.source_label}</p>
+              )}
             </div>
-
-            <button
-              onClick={() => onNavigate('resumes')}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-white hover:bg-blue-50 text-blue-700 text-xs font-semibold shadow-sm transition"
-            >
-              <span>Personalize in Workspace</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
           </div>
 
+          <button
+            onClick={() => onNavigate('vault')}
+            className="self-start sm:self-auto inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+          >
+            <span>Open Vault</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {!summary || summary.ranking_source === 'none' ? (
+          <div className="p-6 text-center space-y-4">
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
+              {summary?.empty_prompt ||
+                'Add your work/academic history or upload a resume to see tailored role rankings.'}
+            </p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5">
+              <button
+                onClick={() => onNavigate('vault')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition"
+              >
+                <FolderKanban className="w-4 h-4" />
+                <span>Add Experience History</span>
+              </button>
+              <button
+                onClick={() => onNavigate('vault')}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Upload Resume</span>
+              </button>
+            </div>
+          </div>
+        ) : summary.top_matches.length === 0 ? (
+          <div className="p-6 text-center text-xs text-slate-500">
+            No active job postings available to rank yet. Add or sync jobs in Job Library.
+          </div>
+        ) : (
           <div className="divide-y divide-slate-100">
-            {topMatches.top_matches.map((match, idx) => (
+            {summary.top_matches.map((match, idx) => (
               <div
                 key={match.job_id}
-                className="p-4 hover:bg-slate-50/80 transition flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition"
               >
-                <div className="flex items-start space-x-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 mt-0.5">
-                    #{idx + 1}
-                  </span>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                        {match.external_job_id || `ID-${match.job_id}`}
-                      </span>
-                      <h4 className="text-sm font-bold text-slate-900">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                      #{idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setJobLoading(true);
+                          setJobError(null);
+                          setSelectedJob(null);
+                          try {
+                            const job = await fetchJobById(match.job_id);
+                            setSelectedJob(job);
+                          } catch (err) {
+                            setJobError(
+                              err instanceof Error ? err.message : 'Failed to load job details'
+                            );
+                          } finally {
+                            setJobLoading(false);
+                          }
+                        }}
+                        className="text-left text-sm font-bold text-slate-900 hover:text-blue-600 hover:underline leading-snug transition"
+                      >
                         {match.title}
-                      </h4>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-500">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                        {match.role_family.split(':')[0]}
-                      </span>
-                      {match.capture_date && (
-                        <>
-                          <span>&bull;</span>
-                          <span className="text-[11px] text-slate-500">
-                            Posted: <strong className="text-slate-700 font-semibold">{match.capture_date}</strong>
+                      </button>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+                        {match.external_job_id && (
+                          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+                            {match.external_job_id}
                           </span>
-                        </>
-                      )}
-                      <span>&bull;</span>
-                      <span className="text-[11px] text-slate-600">
-                        Top Skills: <strong className="text-slate-800">{match.matched_skills.join(', ') || 'General overlap'}</strong>
-                      </span>
-                      <span>&bull;</span>
-                      <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                        {match.readiness_verdict}
-                      </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
+                          {match.role_family.split(':')[0]}
+                        </span>
+                        {match.capture_date && <span>Posted {formatDateDDMMYYYY(match.capture_date)}</span>}
+                      </div>
                     </div>
                   </div>
+                  {match.matched_skills.length > 0 && (
+                    <div className="pl-8 flex flex-wrap gap-1">
+                      {match.matched_skills.map((s) => (
+                        <span
+                          key={s}
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center space-x-4 self-end md:self-center shrink-0">
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-slate-900">
-                      {match.score}% Fit
-                    </span>
-                    <div className="w-24 bg-slate-100 rounded-full h-2 mt-1 overflow-hidden border border-slate-200">
-                      <div
-                        className={`h-2 rounded-full ${
-                          match.score >= 80 ? 'bg-emerald-500' : match.score >= 65 ? 'bg-blue-500' : 'bg-amber-500'
+                <div className="flex items-center justify-between sm:justify-end gap-3 pl-8 sm:pl-0 shrink-0">
+                  <div className="text-left sm:text-right">
+                    <div
+                      className={`text-xs font-bold ${match.is_ai_score ? 'text-emerald-600' : 'text-orange-600'
                         }`}
+                    >
+                      {match.score}% {match.is_ai_score ? 'AI Score' : 'Quick Estimate'}
+                    </div>
+                    <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+                      <div
+                        className={`h-full rounded-full ${match.is_ai_score ? 'bg-emerald-500' : 'bg-orange-500'
+                          }`}
                         style={{ width: `${match.score}%` }}
                       />
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => onNavigate('resumes')}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg border border-slate-200 transition"
-                    title="Open in Resume Workspace"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  {match.source_url && (
+                    <a
+                      href={match.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shrink-0"
+                    >
+                      Go and Apply
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </section>
 
-      {/* MILESTONE M4: COMPARATIVE ANALYTICS & CROSS-ROLE MATRIX */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Section Header */}
-        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="w-5 h-5 text-blue-600" />
-              <h3 className="text-base font-bold text-slate-900">
-                Skills in Demand & Cross-Role Matrix
-              </h3>
+      {/* 2. SKILLS IN DEMAND (Mobile-Friendly Stacked Cards, Tap for Quotes) */}
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Shows how many job postings ask for each skill ({coverageData ? coverageData.analysable_count : 10} verified roles analyzed). Postings without a full description are excluded to keep numbers honest.
-            </p>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">Skills in Demand</h2>
+              <p className="text-[11px] sm:text-xs text-slate-500">
+                Across {summary?.analysable_jobs_count ?? 0} active job descriptions &bull; Tap a skill to read quotes
+              </p>
+            </div>
           </div>
 
-          {/* View Switcher & Export Buttons */}
-          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-            <div className="p-1 bg-slate-100 rounded-lg border border-slate-200 flex items-center">
-              <button
-                onClick={() => setAnalyticsViewMode('table')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition flex items-center gap-1.5 ${
-                  analyticsViewMode === 'table'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Table className="w-3.5 h-3.5" />
-                <span>Most In-Demand Skills</span>
-              </button>
-              <button
-                onClick={() => setAnalyticsViewMode('matrix')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition flex items-center gap-1.5 ${
-                  analyticsViewMode === 'matrix'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Grid className="w-3.5 h-3.5" />
-                <span>Job-by-Job Skill Grid</span>
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
             <a
-              href={
-                analyticsViewMode === 'matrix'
-                  ? getExportMatrixUrl('csv')
-                  : getExportCoverageUrl({
-                      format: 'csv',
-                      role_family: selectedRoleFamily,
-                      search: skillSearch.trim() || undefined,
-                    })
-              }
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
-              title="Download active view as CSV"
+              href={getExportCoverageUrl('csv')}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold"
             >
-              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <Download className="w-3.5 h-3.5" />
               <span>CSV</span>
             </a>
             <a
-              href={
-                analyticsViewMode === 'matrix'
-                  ? getExportMatrixUrl('xlsx')
-                  : getExportCoverageUrl({
-                      format: 'xlsx',
-                      role_family: selectedRoleFamily,
-                      search: skillSearch.trim() || undefined,
-                    })
-              }
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold transition"
-              title="Download active view as Excel (.xlsx)"
+              href={getExportCoverageUrl('xlsx')}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-600" />
+              <Download className="w-3.5 h-3.5" />
               <span>Excel</span>
             </a>
           </div>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="p-4 bg-slate-50/70 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Role Family Filters (TC-12) */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
-            <span className="text-xs font-bold text-slate-500 mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5" />
-              <span>Filter:</span>
-            </span>
-            {['All', 'Family A', 'Family B', 'Family C'].map((fam) => (
+        {!summary || summary.skills_in_demand.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-500">
+            No extracted skills found yet. Add jobs in Job Library or open Explorer.
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {summary.skills_in_demand.map((skill) => (
               <button
-                key={fam}
-                onClick={() => setSelectedRoleFamily(fam)}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition whitespace-nowrap ${
-                  selectedRoleFamily === fam
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
+                key={skill.skill_id}
+                onClick={() => handleOpenEvidence(skill)}
+                className="w-full text-left p-4 hover:bg-slate-50 transition flex flex-col gap-2"
               >
-                {fam === 'All' ? 'All Roles (N=10)' : `${fam}`}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-bold text-slate-900 truncate">
+                      {skill.canonical_name}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                      {skill.category}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 text-xs font-semibold text-blue-600">
+                    <span>
+                      {skill.distinct_job_count}/{summary.analysable_jobs_count} ({skill.coverage_percentage}%)
+                    </span>
+                    <Eye className="w-3.5 h-3.5 text-slate-400" />
+                  </div>
+                </div>
+
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 rounded-full"
+                    style={{ width: `${Math.min(100, skill.coverage_percentage)}%` }}
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-[11px] text-slate-500">
+                  <span>Required: {skill.required_count}</span>
+                  <span>&bull;</span>
+                  <span>Preferred: {skill.preferred_count}</span>
+                </div>
               </button>
             ))}
           </div>
-
-          {/* Search Box */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search skill name..."
-              value={skillSearch}
-              onChange={(e) => setSkillSearch(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 w-full sm:w-56 bg-white"
-            />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-          </div>
-        </div>
-
-        {/* View Mode 1: Coverage Table */}
-        {analyticsViewMode === 'table' && (
-          <div className="overflow-x-auto">
-            {analyticsLoading ? (
-              <div className="p-8 text-center text-xs text-slate-500">
-                Computing mathematical skill coverage...
-              </div>
-            ) : !coverageData || coverageData.skills.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-500">
-                No skills found matching filter.
-              </div>
-            ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-3 px-4 w-12 text-center">#</th>
-                    <th className="py-3 px-4">Skill Name</th>
-                    <th className="py-3 px-4">Category</th>
-                    <th className="py-3 px-4">Coverage %</th>
-                    <th className="py-3 px-4 text-center">Jobs Asking</th>
-                    <th className="py-3 px-4 text-center">Must-Have vs Preferred</th>
-                    <th className="py-3 px-4 text-center">Role Tracks (A | B | C)</th>
-                    <th className="py-3 px-4 text-right">Job Quotes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {coverageData.skills.map((skill, idx) => (
-                    <tr
-                      key={skill.skill_id}
-                      onClick={() => handleOpenEvidence(skill)}
-                      className="hover:bg-slate-50/80 transition cursor-pointer group"
-                    >
-                      <td className="py-3 px-4 text-center font-mono text-slate-400">
-                        {idx + 1}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition">
-                        {skill.canonical_name}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                          {skill.category}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-slate-900 w-10 text-right">
-                            {skill.coverage_percentage}%
-                          </span>
-                          <div className="w-28 bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
-                            <div
-                              className={`h-2 rounded-full ${
-                                skill.coverage_percentage >= 50
-                                  ? 'bg-blue-600'
-                                  : skill.coverage_percentage >= 25
-                                  ? 'bg-indigo-500'
-                                  : 'bg-slate-400'
-                              }`}
-                              style={{ width: `${Math.min(100, skill.coverage_percentage)}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center font-bold text-slate-800">
-                        {skill.distinct_job_count} / {coverageData.analysable_count}
-                      </td>
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <span className="text-red-700 font-semibold">{skill.required_count} Req</span>
-                        <span className="text-slate-300 mx-1">/</span>
-                        <span className="text-blue-700 font-medium">{skill.preferred_count} Pref</span>
-                      </td>
-                      <td className="py-3 px-4 text-center whitespace-nowrap text-[11px] font-mono text-slate-600">
-                        <span className="text-purple-700 font-bold">{skill.family_a_count}</span>
-                        <span className="text-slate-300 mx-1">|</span>
-                        <span className="text-blue-700 font-bold">{skill.family_b_count}</span>
-                        <span className="text-slate-300 mx-1">|</span>
-                        <span className="text-emerald-700 font-bold">{skill.family_c_count}</span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEvidence(skill);
-                          }}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition"
-                          title="Inspect verbatim JD sentences across jobs"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Inspect</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
         )}
+      </section>
 
-        {/* View Mode 2: Cross-Role Matrix (FR-16) */}
-        {analyticsViewMode === 'matrix' && matrixData && (
-          <div className="overflow-x-auto p-4">
-            <table className="w-full text-left text-xs border border-slate-200 rounded-lg">
-              <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-3 min-w-[140px] sticky left-0 bg-slate-50 border-r border-slate-200 z-10">
-                    Canonical Skill
-                  </th>
-                  {matrixData.jobs.map((job) => (
-                    <th
-                      key={job.job_id}
-                      className="py-3 px-2 text-center min-w-[90px] border-r border-slate-200 text-[11px]"
-                      title={`${job.title} (${job.role_family})`}
-                    >
-                      <div className="font-mono text-blue-700 font-bold">{job.external_job_id}</div>
-                      <div className="text-[10px] text-slate-400 truncate max-w-[85px] mx-auto">
-                        {job.role_family.split(':')[0].replace('Family ', 'Fam ')}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {matrixData.skills.slice(0, 25).map((skill) => (
-                  <tr key={skill.skill_id} className="hover:bg-slate-50/60 transition">
-                    <td
-                      onClick={() => handleOpenEvidence(skill)}
-                      className="py-2.5 px-3 font-bold text-slate-900 sticky left-0 bg-white border-r border-slate-200 cursor-pointer hover:text-blue-600"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span>{skill.canonical_name}</span>
-                        <span className="text-[10px] text-slate-400 font-normal">
-                          {skill.coverage_percentage}%
-                        </span>
-                      </div>
-                    </td>
-                    {matrixData.jobs.map((job) => {
-                      const statusVal =
-                        matrixData.matrix[skill.skill_id]?.[job.job_id] || 'none';
-                      return (
-                        <td
-                          key={job.job_id}
-                          className="py-2.5 px-2 text-center border-r border-slate-100"
-                        >
-                          {statusVal === 'required' ? (
-                            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
-                              REQ
-                            </span>
-                          ) : statusVal === 'preferred' ? (
-                            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                              PREF
-                            </span>
-                          ) : (
-                            <span className="text-slate-300 font-mono">—</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* VERBATIM EVIDENCE INSPECTION MODAL (FR-15 / FR-25) */}
-      {evidenceSkill && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      {/* Mobile-Friendly Skill Evidence Modal / Bottom Sheet */}
+      {activeSkill && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
               <div>
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-base font-bold text-slate-900">
-                    {evidenceSkill.canonical_name}
-                  </h3>
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                    {evidenceSkill.category}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Exact quotes from JPMorgan Chase job descriptions ({evidenceData ? evidenceData.items.length : 0} matching jobs)
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                  {activeSkill.canonical_name}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Mentioned in {activeSkill.distinct_job_count} active job(s)
                 </p>
               </div>
               <button
-                onClick={() => setEvidenceSkill(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                onClick={() => setActiveSkill(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-5 overflow-y-auto space-y-3 flex-1 text-xs">
+            <div className="p-4 overflow-y-auto space-y-3">
               {evidenceLoading ? (
-                <div className="p-8 text-center text-slate-500">Loading verbatim evidence snippets...</div>
-              ) : !evidenceData || evidenceData.items.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">No evidence snippets recorded for this skill.</div>
+                <div className="py-8 text-center text-xs text-slate-500">Loading quotes...</div>
+              ) : !evidence || evidence.items.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-500">No snippets found.</div>
               ) : (
-                evidenceData.items.map((item, idx) => (
+                evidence.items.map((item) => (
                   <div
-                    key={idx}
-                    className="p-3.5 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5"
+                    key={`${item.job_id}-${item.requirement_type}`}
+                    className="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded text-[11px]">
-                          {item.external_job_id || `ID-${item.job_id}`}
-                        </span>
-                        <h4 className="font-bold text-slate-900">{item.job_title}</h4>
-                      </div>
+                      <span className="text-xs font-bold text-slate-900">{item.job_title}</span>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          item.requirement_type === 'Required'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.requirement_type === 'Required'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                          : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}
                       >
                         {item.requirement_type}
                       </span>
                     </div>
-
-                    <div className="text-[11px] text-slate-400">
-                      {item.role_family.split(':')[0]} &bull; Status: {item.review_status}
-                    </div>
-
-                    <p className="italic text-slate-700 bg-white p-2.5 rounded border border-slate-200/80 leading-relaxed">
-                      "{item.evidence_snippet}"
+                    <p className="text-xs text-slate-700 italic leading-relaxed">
+                      &ldquo;{item.evidence_snippet}&rdquo;
                     </p>
                   </div>
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+      {/* Mobile-Friendly Job Details Modal / Bottom Sheet */}
+      {(jobLoading || selectedJob || jobError) && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-slate-200 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                  {selectedJob ? selectedJob.title : 'Job Details'}
+                </h3>
+                {selectedJob && (
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {selectedJob.external_job_id || selectedJob.source_job_id || `Job #${selectedJob.id}`} &bull; {selectedJob.company_name} &bull; {selectedJob.location}
+                    {selectedJob.capture_date ? ` • Posted ${formatDateDDMMYYYY(selectedJob.capture_date)}` : ''}
+                  </p>
+                )}
+              </div>
               <button
-                onClick={() => setEvidenceSkill(null)}
-                className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition"
+                type="button"
+                onClick={() => {
+                  setSelectedJob(null);
+                  setJobError(null);
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto overscroll-contain space-y-4">
+              {jobLoading ? (
+                <div className="py-10 text-center text-xs text-slate-500">
+                  Loading job details...
+                </div>
+              ) : jobError ? (
+                <div className="p-3 rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-700">
+                  {jobError}
+                </div>
+              ) : selectedJob ? (
+                <>
+                  {selectedJob.summary && (
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Summary
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                        {selectedJob.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedJob.responsibilities && (
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Responsibilities
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                        {selectedJob.responsibilities}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedJob.qualifications && (
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Required Qualifications
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                        {selectedJob.qualifications}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedJob.preferred_qualifications && (
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Preferred Qualifications
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                        {selectedJob.preferred_qualifications}
+                      </p>
+                    </div>
+                  )}
+
+                  {!selectedJob.summary &&
+                    !selectedJob.responsibilities &&
+                    !selectedJob.qualifications &&
+                    selectedJob.original_description && (
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                          Description
+                        </h4>
+                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                          {selectedJob.original_description}
+                        </p>
+                      </div>
+                    )}
+                </>
+              ) : null}
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedJob(null);
+                  setJobError(null);
+                }}
+                className="px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-100"
               >
                 Close
               </button>
+              {selectedJob?.source_url && (
+                <a
+                  href={selectedJob.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition"
+                >
+                  Go and Apply
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
             </div>
           </div>
         </div>

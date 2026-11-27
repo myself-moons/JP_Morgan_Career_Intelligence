@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.models.entities import Company, JobListing
+from app.models.entities import Company, JobListing, User
 from app.models.schemas import (
     JobCreate,
     JobUpdate,
@@ -102,7 +103,11 @@ def parse_raw_text(payload: ParseTextRequest, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=JobOut, status_code=status.HTTP_201_CREATED, summary="Create a new job listing")
-def create_job(payload: JobCreate, db: Session = Depends(get_db)):
+def create_job(
+    payload: JobCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Ingest a new job listing with structured sections and auto-code assignment (FR-01, BR-01)."""
     # BR-01 validation: Description required unless status is 'JD unavailable'
     is_unavailable = payload.status.strip().lower() == "jd unavailable"
@@ -162,6 +167,7 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
         preferred_qualifications = preferred_qualifications or parsed_secs.get("preferred_qualifications")
 
     job = JobListing(
+        user_id=None if current_user.is_local_dev else current_user.id,
         company_id=company.id,
         title=payload.title.strip(),
         external_job_id=req_id,
@@ -235,9 +241,12 @@ def get_jobs(
     location: Optional[str] = Query(None, description="Filter by location"),
     search: Optional[str] = Query(None, description="Free text search in title or description"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Retrieve job listings with counts, denominators, and multi-dimensional filters (FR-04)."""
-    query = db.query(JobListing)
+    """Retrieve shared baseline jobs plus user-created job listings."""
+    query = db.query(JobListing).filter(
+        or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id)
+    )
 
     if role_family:
         query = query.filter(JobListing.role_family.ilike(f"%{role_family.strip()}%"))
@@ -281,9 +290,18 @@ def get_jobs(
 
 
 @router.get("/{job_id}", response_model=JobOut, summary="Get single job details")
-def get_job(job_id: int, db: Session = Depends(get_db)):
+def get_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Retrieve a single job record including immutable original description (FR-03)."""
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+    job = (
+        db.query(JobListing)
+        .filter(JobListing.id == job_id)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .first()
+    )
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -293,9 +311,19 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{job_id}", response_model=JobOut, summary="Update job metadata or description")
-def update_job(job_id: int, payload: JobUpdate, db: Session = Depends(get_db)):
+def update_job(
+    job_id: int,
+    payload: JobUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Update job metadata and description with last-modified timestamp tracking (FR-05)."""
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+    job = (
+        db.query(JobListing)
+        .filter(JobListing.id == job_id)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .first()
+    )
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -333,9 +361,18 @@ def update_job(job_id: int, payload: JobUpdate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{job_id}", summary="Delete job listing")
-def delete_job(job_id: int, db: Session = Depends(get_db)):
+def delete_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Delete a job record and cascade dependent requirements (FR-06)."""
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+    job = (
+        db.query(JobListing)
+        .filter(JobListing.id == job_id)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .first()
+    )
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

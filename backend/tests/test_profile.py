@@ -4,9 +4,8 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import SessionLocal, init_db
 from app.core.seed import seed_baseline_jobs
-from app.models.entities import JobListing, Skill
+from app.models.entities import JobListing, ResumeDocument, Skill
 from app.services.profile_service import seed_profile_if_empty, validate_resume_parse
-from app.services.resume_service import seed_resumes
 from app.services.taxonomy_service import seed_taxonomy_if_empty, batch_extract_all_jobs
 
 
@@ -15,11 +14,30 @@ def setup_m5_data():
     init_db()
     db = SessionLocal()
     seed_baseline_jobs(db)
-    seed_resumes(db)
     seed_taxonomy_if_empty(db)
     batch_extract_all_jobs(db)
     seed_profile_if_empty(db)
+    created_resume_id = None
+    if db.query(ResumeDocument).count() == 0:
+        r = ResumeDocument(
+            name="Test Profile Resume",
+            raw_text=(
+                "Experienced in Python, SQL, Pandas, Power BI, FastAPI, and GenAI Predictive Analysis Job Simulation. "
+                "Built modular data pipelines, tested reporting workflows, and collaborated on analytics dashboards across teams."
+            ),
+            is_active=1,
+        )
+        db.add(r)
+        db.commit()
+        db.refresh(r)
+        created_resume_id = r.id
     db.close()
+    yield
+    if created_resume_id is not None:
+        db = SessionLocal()
+        db.query(ResumeDocument).filter(ResumeDocument.id == created_resume_id).delete()
+        db.commit()
+        db.close()
 
 
 def test_tc15_cardlyze_profile_attribution_seeded():
@@ -86,24 +104,45 @@ def test_tc19_tc20_resume_coverage_and_claimed_unsupported():
     client = TestClient(app)
     db = SessionLocal()
     job = db.query(JobListing).filter(JobListing.status == "Available").first()
-    db.close()
+    test_resume = ResumeDocument(
+        name="TC19-TC20 Verification Resume",
+        raw_text=(
+            "Experienced in Python, SQL, Pandas, Power BI, FastAPI, and GenAI Predictive Analysis Job Simulation.\n"
+            "Built modular data pipelines, tested reporting workflows, and collaborated on analytics dashboards across teams.\n"
+            "Applied Python and SQL across production analytics tasks.\n"
+            "Completed coursework in data modeling and reporting.\n"
+        ),
+        is_active=0,
+    )
+    db.add(test_resume)
+    db.commit()
+    db.refresh(test_resume)
     assert job is not None
+    job_id = job.id
+    resume_id = test_resume.id
+    db.close()
 
-    resp = client.get(f"/api/profile/match-job/{job.id}")
-    assert resp.status_code == 200
-    data = resp.json()
+    try:
+        resp = client.get(f"/api/profile/match-job/{job_id}?resume_id={resume_id}")
+        assert resp.status_code == 200
+        data = resp.json()
 
-    # Must present 6 separate dimensions, never a single composite ATS score (FR-21, FR-38)
-    assert len(data["dimensions"]) == 6
-    assert "overall_score" not in data
-    assert "parse_check" in data
-    assert data["parse_check"]["status"] == "Healthy"
+        # Must present 6 separate dimensions, never a single composite ATS score (FR-21, FR-38)
+        assert len(data["dimensions"]) == 6
+        assert "overall_score" not in data
+        assert "parse_check" in data
+        assert data["parse_check"]["status"] == "Healthy"
 
-    # Active resume includes Forage GenAI simulation (Deep Learning / GenAI) whose status is Learning
-    unsupported_names = [u["canonical_name"] for u in data["claimed_unsupported"]]
-    assert "Deep Learning / GenAI" in unsupported_names
-    genai_flag = next(u for u in data["claimed_unsupported"] if u["canonical_name"] == "Deep Learning / GenAI")
-    assert "Claimed in resume, unsupported by profile evidence" in genai_flag["warning_message"]
+        # Test resume mentions data pipelines (ETL Pipelines), which has no ProfileEvidence deliverable
+        unsupported_names = [u["canonical_name"] for u in data["claimed_unsupported"]]
+        assert "ETL Pipelines" in unsupported_names
+        etl_flag = next(u for u in data["claimed_unsupported"] if u["canonical_name"] == "ETL Pipelines")
+        assert "Claimed in resume, unsupported by profile evidence" in etl_flag["warning_message"]
+    finally:
+        db = SessionLocal()
+        db.query(ResumeDocument).filter(ResumeDocument.id == resume_id).delete()
+        db.commit()
+        db.close()
 
 
 def test_tc21_reference_data_education_eligibility_separation():

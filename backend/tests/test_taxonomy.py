@@ -90,7 +90,7 @@ def test_tc08_deterministic_skill_extraction():
     extractions = resp.json()
     assert len(extractions) > 0
 
-    first = extractions[0]
+    first = next((e for e in extractions if e["review_status"] in ("Proposed", "Accepted", "Edited")), extractions[0])
     assert "canonical_name" in first
     assert "evidence_snippet" in first
     assert len(first["evidence_snippet"]) >= 10

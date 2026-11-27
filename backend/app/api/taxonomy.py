@@ -13,15 +13,48 @@ from app.models.schemas import (
     JobSkillCreate,
     DisambiguateRequest,
     DisambiguateResponse,
+    SkillSuggestOut,
+    SkillResolveRequest,
+    SkillResolveResponse,
 )
 from app.services.taxonomy_service import (
     seed_taxonomy_if_empty,
     extract_and_save_job_skills,
     batch_extract_all_jobs,
     ai_disambiguate_skill,
+    suggest_canonical_skills,
+    resolve_or_create_canonical_skill,
 )
 
 router = APIRouter(prefix="/taxonomy", tags=["Taxonomy & Skill Review"])
+
+
+@router.get("/suggest", response_model=List[SkillSuggestOut], summary="Typeahead autocomplete across canonical skills & aliases (v3.0)")
+def suggest_skills(
+    q: str = Query("", description="Prefix or substring typed by user"),
+    limit: int = Query(12, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    return suggest_canonical_skills(db, query=q, limit=limit)
+
+
+@router.post("/resolve-or-create", response_model=SkillResolveResponse, summary="Resolve alternate wording or register a new short canonical skill (v3.0)")
+def resolve_or_create_skill(payload: SkillResolveRequest, db: Session = Depends(get_db)):
+    try:
+        skill, created_new, matched_via = resolve_or_create_canonical_skill(
+            raw_name=payload.raw_name,
+            db=db,
+            category=payload.category,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return SkillResolveResponse(
+        id=skill.id,
+        canonical_name=skill.canonical_name,
+        category=skill.category,
+        created_new=created_new,
+        matched_via=matched_via,
+    )
 
 
 @router.get("/skills", response_model=List[SkillOut], summary="List all canonical skills and aliases")

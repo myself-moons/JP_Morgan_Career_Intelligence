@@ -2,33 +2,54 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
-# Create SQLite database engine
-# connect_args={"check_same_thread": False} is required for SQLite with multi-threaded FastAPI
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    echo=False,
-)
+is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+
+engine_kwargs = {
+    "echo": False,
+    "pool_pre_ping": not is_sqlite,
+}
+if is_sqlite:
+    # check_same_thread=False is SQLite-only; PostgreSQL rejects it
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
 
+def _sqlite_add_column_if_missing(conn, table_name: str, column_name: str, col_type: str):
+    cursor = conn.exec_driver_sql(f"PRAGMA table_info({table_name})")
+    existing_cols = [row[1] for row in cursor.fetchall()]
+    if existing_cols and column_name not in existing_cols:
+        conn.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {col_type}")
+
+
 def init_db():
-    """Initializes tables and automatically migrates SQLite columns if needed."""
+    """Initializes tables for SQLite or PostgreSQL and runs safe SQLite column migrations."""
     Base.metadata.create_all(bind=engine)
-    with engine.connect() as conn:
-        try:
-            cursor = conn.exec_driver_sql("PRAGMA table_info(job_listings)")
-            existing_cols = [row[1] for row in cursor.fetchall()]
-            for col in ["summary", "responsibilities", "qualifications", "preferred_qualifications", "source_job_id"]:
-                if col not in existing_cols and "title" in existing_cols:
+    if engine.dialect.name == "sqlite":
+        with engine.connect() as conn:
+            try:
+                for col in [
+                    "summary",
+                    "responsibilities",
+                    "qualifications",
+                    "preferred_qualifications",
+                    "source_job_id",
+                ]:
                     col_type = "VARCHAR(100)" if col == "source_job_id" else "TEXT"
-                    conn.exec_driver_sql(f"ALTER TABLE job_listings ADD COLUMN {col} {col_type}")
-            conn.commit()
-        except Exception:
-            pass
+                    _sqlite_add_column_if_missing(conn, "job_listings", col, col_type)
+
+                # Multi-user isolation columns (v3.0 upgrades for existing local SQLite DBs)
+                _sqlite_add_column_if_missing(conn, "job_listings", "user_id", "INTEGER")
+                _sqlite_add_column_if_missing(conn, "resumes", "user_id", "INTEGER")
+                _sqlite_add_column_if_missing(conn, "resumes", "stored_filename", "VARCHAR(255)")
+                _sqlite_add_column_if_missing(conn, "llm_evaluations", "user_id", "INTEGER")
+                conn.commit()
+            except Exception:
+                pass
 
 
 def get_db():

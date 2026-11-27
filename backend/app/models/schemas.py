@@ -162,9 +162,13 @@ class TopJobMatch(BaseModel):
     external_job_id: Optional[str] = None
     role_family: str
     score: int
+    is_ai_score: bool = False
+    score_source: str = "Quick Estimate"
+    model_used: Optional[str] = None
     matched_skills: List[str]
     readiness_verdict: str
     capture_date: Optional[str] = None
+    source_url: Optional[str] = None
 
 
 class TopJobMatchesResponse(BaseModel):
@@ -474,6 +478,238 @@ class LearningRecommendationsResponse(BaseModel):
     target_job_title: Optional[str] = None
     priority_gap_skills: List[str]
     recommendations: List[LearningRecommendationItem]
+
+
+# --- v3.0: Google Auth & Multi-User Schemas ---
+
+class AuthConfigOut(BaseModel):
+    google_client_id: str
+    auth_required: bool
+    version: str
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str = Field(..., min_length=10)
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    display_name: str
+    avatar_url: Optional[str] = None
+    is_local_dev: int = 0
+
+
+# --- v3.0: Global Skill Autocomplete & Deduplication ---
+
+class SkillSuggestOut(BaseModel):
+    id: int
+    canonical_name: str
+    category: str
+    matched_alias: Optional[str] = None
+    job_count: int = 0
+
+
+class SkillResolveRequest(BaseModel):
+    raw_name: str = Field(..., min_length=1, max_length=80)
+    category: str = "Technical"
+
+
+class SkillResolveResponse(BaseModel):
+    id: int
+    canonical_name: str
+    category: str
+    created_new: bool
+    matched_via: str
+
+
+# --- v3.0: Skill Explorer (Common vs Role-Specific) ---
+
+class ExplorerJobEvidence(BaseModel):
+    job_id: int
+    job_title: str
+    external_job_id: Optional[str] = None
+    role_family: str
+    requirement_type: str
+    evidence_snippet: Optional[str] = None
+
+
+class ExplorerSkillItem(BaseModel):
+    skill_id: int
+    canonical_name: str
+    category: str
+    selected_job_count: int
+    total_selected_jobs: int
+    bucket: str  # common_core, shared, role_specific
+    required_count: int
+    preferred_count: int
+    evidences: List[ExplorerJobEvidence] = Field(default_factory=list)
+
+
+class SkillExplorerResponse(BaseModel):
+    selected_job_ids: List[int]
+    total_selected_jobs: int
+    available_jobs: List[MatrixJobInfo]
+    common_core: List[ExplorerSkillItem]
+    shared: List[ExplorerSkillItem]
+    role_specific: List[ExplorerSkillItem]
+
+
+# --- v3.0: Experience Vault & Mini-RAG ---
+
+class ExperienceEntryCreate(BaseModel):
+    title: str = Field(..., min_length=2, max_length=255)
+    organization_or_project: Optional[str] = None
+    contribution_note: Optional[str] = None
+    detailed_narrative: str = Field(..., min_length=10)
+    skill_tags: List[str] = Field(default_factory=list)
+
+
+class ExperienceEntryUpdate(BaseModel):
+    title: Optional[str] = None
+    organization_or_project: Optional[str] = None
+    contribution_note: Optional[str] = None
+    detailed_narrative: Optional[str] = None
+    skill_tags: Optional[List[str]] = None
+
+
+class ExperienceEntryOut(BaseModel):
+    id: int
+    title: str
+    organization_or_project: Optional[str] = None
+    contribution_note: Optional[str] = None
+    detailed_narrative: str
+    skill_tags: List[str]
+    chunk_count: int = 0
+    has_embeddings: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+class VaultCompareRequest(BaseModel):
+    job_ids: List[int] = Field(..., min_length=1, max_length=3)
+    model_mode: str = Field(default="flash", description="flash or pro")
+    force_refresh: bool = False
+
+
+class RetrievedChunkPreview(BaseModel):
+    entry_title: str
+    chunk_text: str
+    similarity: float
+
+
+class PerJobComparison(BaseModel):
+    job_id: int
+    job_title: str
+    external_job_id: Optional[str] = None
+    fit_score: Optional[int] = Field(default=None, ge=0, le=100)
+    is_ai_score: bool = False
+    summary: str
+    strengths_from_history: List[str] = Field(default_factory=list)
+    gaps: List[str] = Field(default_factory=list)
+    resume_suggestions: List[str] = Field(default_factory=list)
+
+
+class VaultCompareResponse(BaseModel):
+    job_ids: List[int]
+    job_titles: List[str]
+    strengths_from_history: List[str] = Field(default_factory=list)
+    gaps: List[str] = Field(default_factory=list)
+    resume_suggestions: List[str] = Field(default_factory=list)
+    summary: str
+    per_job_results: List[PerJobComparison] = Field(default_factory=list)
+    retrieved_context: List[RetrievedChunkPreview] = Field(default_factory=list)
+    is_llm_powered: bool = False
+    is_cached: bool = False
+    model_used: str
+    fallback_note: Optional[str] = None
+
+
+# --- v3.0: User-Owned Roadmap & Saved Resources ---
+
+class RoadmapItemCreate(BaseModel):
+    skill_name: str = Field(..., min_length=1, max_length=80)
+    goal_note: Optional[str] = Field(None, max_length=255)
+    target_job_id: Optional[int] = None
+    priority: str = "Medium"
+    status: str = "To Learn"
+
+
+class RoadmapItemUpdate(BaseModel):
+    skill_name: Optional[str] = None
+    goal_note: Optional[str] = None
+    target_job_id: Optional[int] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
+class SavedResourceCreate(BaseModel):
+    roadmap_item_id: Optional[int] = None
+    title: str = Field(..., min_length=2, max_length=255)
+    url: str = Field(..., min_length=4)
+    resource_type: str = "Course"
+    skill_name: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class SavedResourceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    roadmap_item_id: Optional[int] = None
+    title: str
+    url: str
+    resource_type: str
+    skill_name: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+
+
+class RoadmapItemOut(BaseModel):
+    id: int
+    skill_id: Optional[int] = None
+    skill_name: str
+    goal_note: Optional[str] = None
+    target_job_id: Optional[int] = None
+    target_job_title: Optional[str] = None
+    priority: str
+    status: str
+    sort_order: int
+    resources: List[SavedResourceOut] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+
+
+class RoadmapReviewRequest(BaseModel):
+    job_ids: List[int] = Field(default_factory=list)
+    model_mode: str = "flash"
+    force_refresh: bool = False
+
+
+class RoadmapReviewResponse(BaseModel):
+    summary: str
+    missing_common_skills: List[str] = Field(default_factory=list)
+    niche_or_low_priority: List[str] = Field(default_factory=list)
+    project_ideas: List[str] = Field(default_factory=list)
+    is_llm_powered: bool = False
+    is_cached: bool = False
+    model_used: str
+    fallback_note: Optional[str] = None
+
+
+# --- v3.0: Dashboard 3-Tier Fallback Response ---
+
+class DashboardSummaryResponse(BaseModel):
+    ranking_source: str  # experience_vault, resume, none
+    source_label: str
+    empty_prompt: Optional[str] = None
+    analysable_jobs_count: int
+    top_matches: List[TopJobMatch] = Field(default_factory=list)
+    skills_in_demand: List[SkillCoverageItem] = Field(default_factory=list)
+
 
 
 

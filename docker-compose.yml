@@ -8,8 +8,9 @@ services:
       - "8000:8000"
     environment:
       - JCI_HOST=0.0.0.0
-      - JCI_PORT=8000
+      - PORT=8000
       - JCI_SERVE_FRONTEND=true
+      - JCI_COOKIE_SECURE=false
     env_file:
       - path: .env
         required: false

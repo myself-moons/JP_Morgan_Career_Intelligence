@@ -8,15 +8,19 @@ export interface HealthStatus {
   db_console_url?: string;
 }
 
-export type RoleFamily =
-  | 'Family A: Data Management, Quality and Governance'
-  | 'Family B: Analytics, Automation and AI'
-  | 'Family C: Finance, Credit and Operations'
-  | string;
+export interface AuthConfig {
+  google_client_id: string;
+  auth_required: boolean;
+  version: string;
+}
 
-export type JobStatus = 'Available' | 'JD unavailable' | 'Discovered' | 'Stale' | 'Archived';
-export type SkillType = 'Technical' | 'Soft' | 'Domain' | 'Tool';
-export type RequirementLevel = 'Required' | 'Preferred';
+export interface AuthUser {
+  id: number;
+  email: string;
+  display_name: string;
+  avatar_url?: string | null;
+  is_local_dev: number;
+}
 
 export interface Job {
   id: number;
@@ -73,40 +77,24 @@ export interface UploadResponse {
   suggested_code: string;
 }
 
-export interface NextCodeResponse {
-  next_code: string;
+export interface SyncResult {
+  total_found: number;
+  added: number;
+  updated: number;
+  unchanged: number;
+  stale: number;
+  jobs: Job[];
+  message: string;
 }
 
-export interface TaxonomySkill {
+export interface ResumeDocument {
   id: number;
-  canonical_name: string;
-  category: string;
-  description?: string | null;
-  aliases: string[];
-  job_count: number;
-}
-
-export interface JobSkillRecord {
-  id: number;
-  job_id: number;
-  skill_id: number;
-  canonical_name: string;
-  category: string;
-  matched_alias?: string | null;
-  requirement_type: 'Required' | 'Preferred' | 'Unspecified';
-  extraction_method: string;
-  review_status: 'Proposed' | 'Accepted' | 'Rejected' | 'Edited';
-  evidence_snippet?: string | null;
-  confidence: number;
-}
-
-export interface DisambiguateResult {
-  phrase: string;
-  suggested_canonical_name: string;
-  suggested_skill_id?: number | null;
-  confidence: number;
-  rationale: string;
-  is_llm_powered: boolean;
+  name: string;
+  pdf_filename?: string | null;
+  raw_text?: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SkillCoverageItem {
@@ -120,30 +108,6 @@ export interface SkillCoverageItem {
   family_a_count: number;
   family_b_count: number;
   family_c_count: number;
-}
-
-export interface CoverageResponse {
-  total_jobs: number;
-  analysable_count: number;
-  role_family_counts: Record<string, number>;
-  active_family_filter?: string | null;
-  skills: SkillCoverageItem[];
-}
-
-export interface MatrixJobInfo {
-  job_id: number;
-  external_job_id?: string | null;
-  title: string;
-  role_family: string;
-  status: string;
-}
-
-export interface CrossRoleMatrixResponse {
-  total_analysable_jobs: number;
-  family_counts: Record<string, number>;
-  jobs: MatrixJobInfo[];
-  skills: SkillCoverageItem[];
-  matrix: Record<string, Record<string, string>>;
 }
 
 export interface SkillEvidenceItem {
@@ -164,227 +128,174 @@ export interface SkillEvidenceResponse {
   items: SkillEvidenceItem[];
 }
 
-export interface Skill {
-  id: string;
-  canonical_name: string;
-  skill_type: SkillType;
-  category?: string;
-  aliases: string[];
-}
-
-export interface SkillExtraction {
-  id: string;
-  job_id: number;
-  skill_id: string;
-  canonical_name: string;
-  requirement_level: RequirementLevel;
-  confidence: number;
-  snippet: string;
-  is_verified: boolean;
-}
-
-export interface ProfileEvidence {
-  id: string;
-  skill_id: string;
-  skill_name: string;
-  source_type: 'Project' | 'CardLyze' | 'Role' | 'Certification';
-  confidence_score: number;
-  status: 'Demonstrated' | 'Partially Demonstrated' | 'Claimed Unsupported';
-  evidence_text: string;
-}
-
-export interface ResumeDocument {
-  id: number;
-  name: string;
-  pdf_filename?: string | null;
-  latex_filename?: string | null;
-  raw_text?: string | null;
-  latex_source?: string | null;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SyncResult {
-  total_found: number;
-  added: number;
-  updated: number;
-  unchanged: number;
-  stale: number;
-  jobs: Job[];
-  message: string;
-}
-
-export interface DimensionDetail {
-  score: number;
-  reasoning: string;
-}
-
-export interface ExplainableMatch {
-  overall_score: number;
-  readiness_verdict: string;
-  summary_reasoning: string;
-  dimensions: Record<string, DimensionDetail>;
-  verified_matched_skills: string[];
-  critical_missing_skills: string[];
-  actionable_latex_recommendations: string[];
-  is_llm_powered: boolean;
-  is_cached?: boolean;
-}
-
 export interface TopJobMatch {
   job_id: number;
   title: string;
   external_job_id?: string | null;
   role_family: string;
   score: number;
+  is_ai_score?: boolean;
+  score_source?: string;
+  model_used?: string | null;
   matched_skills: string[];
   readiness_verdict: string;
   capture_date?: string | null;
+  source_url?: string | null;
 }
 
-export interface TopJobMatchesResponse {
-  active_resume_id: number;
-  active_resume_name: string;
+export interface DashboardSummary {
+  ranking_source: 'experience_vault' | 'resume' | 'none' | string;
+  source_label: string;
+  empty_prompt?: string | null;
+  analysable_jobs_count: number;
   top_matches: TopJobMatch[];
+  skills_in_demand: SkillCoverageItem[];
 }
 
-
-export type ActiveTab =
-  | 'dashboard'
-  | 'jobs'
-  | 'resumes'
-  | 'skills'
-  | 'profile'
-  | 'learning'
-  | 'db_console';
-
-// --- M5-CardLyze: Profile Evidence & Multi-Dimensional Audit Types ---
-
-export interface UserProfile {
+export interface SkillSuggestion {
   id: number;
-  full_name: string;
-  highest_degree: string;
-  education_summary?: string | null;
-  years_experience: string;
-  experience_summary?: string | null;
-  projects_summary?: string | null;
-  updated_at: string;
+  canonical_name: string;
+  category: string;
+  matched_alias?: string | null;
+  job_count: number;
 }
 
-export interface ProfileEvidenceItem {
+export interface SkillResolveResult {
   id: number;
-  skill_id: number;
   canonical_name: string;
   category: string;
-  evidence_status: 'Demonstrated' | 'Partial' | 'Learning' | 'Not demonstrated' | string;
-  contribution_type: string;
-  source_project?: string | null;
-  evidence_description?: string | null;
-  recorded_date: string;
-  updated_at: string;
+  created_new: boolean;
+  matched_via: string;
 }
 
-export interface ProfileOverviewResponse {
-  profile: UserProfile;
-  evidence_items: ProfileEvidenceItem[];
-  status_counts: Record<string, number>;
-  contribution_counts: Record<string, number>;
-}
-
-export interface ResumeParseCheck {
-  status: 'Healthy' | 'Warning' | 'Empty' | string;
-  char_count: number;
-  line_count: number;
-  warnings: string[];
-}
-
-export interface SkillCoverageComparisonRow {
-  skill_id: number;
+export interface TaxonomySkill {
+  id: number;
   canonical_name: string;
   category: string;
-  requirement_type: string;
-  mentioned_in_resume: boolean;
-  jd_evidence_snippet?: string | null;
-  resume_matching_line?: string | null;
-  profile_evidence_status: string;
-  contribution_type?: string | null;
-  source_project?: string | null;
+  description?: string | null;
+  aliases: string[];
+  job_count: number;
 }
 
-export interface ClaimedUnsupportedItem {
-  skill_id: number;
-  canonical_name: string;
-  category: string;
-  resume_matching_line: string;
-  current_evidence_status: string;
-  warning_message: string;
+export interface MatrixJobInfo {
+  job_id: number;
+  external_job_id?: string | null;
+  title: string;
+  role_family: string;
+  status: string;
 }
 
-export interface DimensionEvaluation {
-  dimension_key: string;
-  dimension_label: string;
-  status_badge: string;
-  summary: string;
-  matched_items: string[];
-  gap_items: string[];
-  notes?: string | null;
-}
-
-export interface ProfileJobMatchResponse {
+export interface ExplorerJobEvidence {
   job_id: number;
   job_title: string;
   external_job_id?: string | null;
   role_family: string;
-  resume_id?: number | null;
-  resume_name?: string | null;
-  parse_check: ResumeParseCheck;
-  dimensions: DimensionEvaluation[];
-  skill_coverage: SkillCoverageComparisonRow[];
-  claimed_unsupported: ClaimedUnsupportedItem[];
-  education_requirements: string[];
-  experience_requirements: string[];
+  requirement_type: string;
+  evidence_snippet?: string | null;
 }
 
-// --- M6: Learning Intelligence & Gap Tracker Types ---
+export interface ExplorerSkillItem {
+  skill_id: number;
+  canonical_name: string;
+  category: string;
+  selected_job_count: number;
+  total_selected_jobs: number;
+  bucket: 'common_core' | 'shared' | 'role_specific' | string;
+  required_count: number;
+  preferred_count: number;
+  evidences: ExplorerJobEvidence[];
+}
 
-export interface LearningResource {
+export interface SkillExplorerResponse {
+  selected_job_ids: number[];
+  total_selected_jobs: number;
+  available_jobs: MatrixJobInfo[];
+  common_core: ExplorerSkillItem[];
+  shared: ExplorerSkillItem[];
+  role_specific: ExplorerSkillItem[];
+}
+
+export interface ExperienceEntry {
   id: number;
-  provider: string;
   title: string;
-  url?: string | null;
-  skills_addressed: string[];
-  cost_status: 'Free' | 'Paid' | 'Freemium' | 'Unknown' | string;
-  has_certificate: boolean;
-  duration?: string | null;
-  verification_date: string;
-  description?: string | null;
-  is_custom: boolean;
-  progress_status: 'Not started' | 'In progress' | 'Completed' | 'Paused' | string;
-  started_at?: string | null;
-  completed_at?: string | null;
-  notes?: string | null;
+  organization_or_project?: string | null;
+  contribution_note?: string | null;
+  detailed_narrative: string;
+  skill_tags: string[];
+  chunk_count: number;
+  has_embeddings: boolean;
+  created_at: string;
   updated_at: string;
 }
 
-export interface LearningProgressResponse {
-  resource: LearningResource;
-  profile_evidence_auto_upgraded: boolean;
-  policy_notice: string;
+export interface RetrievedChunkPreview {
+  entry_title: string;
+  chunk_text: string;
+  similarity: number;
 }
 
-export interface LearningRecommendationItem {
-  resource: LearningResource;
-  addressed_gaps: string[];
-  max_jd_coverage_count: number;
-  gap_reason: string;
-  pricing_warning?: string | null;
+export interface PerJobComparison {
+  job_id: number;
+  job_title: string;
+  external_job_id?: string | null;
+  fit_score?: number | null;
+  is_ai_score?: boolean;
+  summary: string;
+  strengths_from_history: string[];
+  gaps: string[];
+  resume_suggestions: string[];
 }
 
-export interface LearningRecommendationsResponse {
-  analysable_jobs_count: number;
+export interface VaultCompareResponse {
+  job_ids: number[];
+  job_titles: string[];
+  strengths_from_history: string[];
+  gaps: string[];
+  resume_suggestions: string[];
+  summary: string;
+  per_job_results?: PerJobComparison[];
+  retrieved_context: RetrievedChunkPreview[];
+  is_llm_powered: boolean;
+  is_cached: boolean;
+  model_used: string;
+  fallback_note?: string | null;
+}
+
+export interface SavedResource {
+  id: number;
+  roadmap_item_id?: number | null;
+  title: string;
+  url: string;
+  resource_type: string;
+  skill_name?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface RoadmapItem {
+  id: number;
+  skill_id?: number | null;
+  skill_name: string;
+  goal_note?: string | null;
   target_job_id?: number | null;
   target_job_title?: string | null;
-  priority_gap_skills: string[];
-  recommendations: LearningRecommendationItem[];
+  priority: 'High' | 'Medium' | 'Low' | string;
+  status: 'To Learn' | 'In Progress' | 'Done' | string;
+  sort_order: number;
+  resources: SavedResource[];
+  created_at: string;
+  updated_at: string;
 }
+
+export interface RoadmapReviewResponse {
+  summary: string;
+  missing_common_skills: string[];
+  niche_or_low_priority: string[];
+  project_ideas: string[];
+  is_llm_powered: boolean;
+  is_cached: boolean;
+  model_used: string;
+  fallback_note?: string | null;
+}
+
+export type ActiveTab = 'dashboard' | 'jobs' | 'explorer' | 'vault' | 'roadmap';

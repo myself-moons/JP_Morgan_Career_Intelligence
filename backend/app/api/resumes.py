@@ -1,308 +1,210 @@
-import hashlib
-import json
+import uuid
 from pathlib import Path
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
-from fastapi.responses import FileResponse, PlainTextResponse, Response
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
-from app.models.entities import JobListing, LLMEvaluation, utcnow
-from app.models.schemas import (
-    ResumeOut,
-    ResumeLatexUpdate,
-    ExplainableMatchResponse,
-    TopJobMatchesResponse,
-)
-from app.services import resume_service
-from app.services.llm_matcher import explainable_resume_match, rank_top_jobs_for_resume
+from app.models.entities import ResumeDocument, User, utcnow
+from app.models.schemas import ResumeOut
+from app.services.document_parser import parse_document
 
-router = APIRouter(prefix="/resumes", tags=["Resumes"])
+router = APIRouter(prefix="/resumes", tags=["Resumes (v3.0)"])
 
 
-@router.get("", response_model=List[ResumeOut])
-def list_resumes(db: Session = Depends(get_db)):
-    """List all available resumes in the repository."""
-    # Ensure folder resumes are seeded if DB is empty
-    resumes = resume_service.get_all_resumes(db)
+class ResumeTextCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    raw_text: str = Field(..., min_length=20)
+
+
+def _user_upload_dir(user_id: int) -> Path:
+    d = settings.UPLOADS_DIR / f"user_{user_id}"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _validate_upload_magic(ext: str, content: bytes) -> None:
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    if len(content) > settings.MAX_UPLOAD_BYTES:
+        mb = settings.MAX_UPLOAD_BYTES // (1024 * 1024)
+        raise HTTPException(status_code=413, detail=f"File exceeds maximum allowed size of {mb} MB.")
+    if ext == ".pdf" and not content.startswith(b"%PDF-"):
+        raise HTTPException(status_code=400, detail="Invalid PDF file header.")
+    if ext == ".docx" and not content.startswith(b"PK\x03\x04"):
+        raise HTTPException(status_code=400, detail="Invalid DOCX archive header.")
+
+
+@router.get("", response_model=List[ResumeOut], summary="List resumes belonging to the signed-in user")
+def list_resumes(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return (
+        db.query(ResumeDocument)
+        .filter(ResumeDocument.user_id == current_user.id)
+        .order_by(ResumeDocument.is_active.desc(), ResumeDocument.id.desc())
+        .all()
+    )
+
+
+@router.get("/active", response_model=Optional[ResumeOut], summary="Get active resume for the current user")
+def get_active_resume(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    resumes = (
+        db.query(ResumeDocument)
+        .filter(ResumeDocument.user_id == current_user.id)
+        .order_by(ResumeDocument.is_active.desc(), ResumeDocument.id.desc())
+        .all()
+    )
     if not resumes:
-        resumes = resume_service.seed_resumes(db)
-    return resumes
-
-
-@router.post("/seed", response_model=List[ResumeOut])
-def refresh_seed_resumes(db: Session = Depends(get_db)):
-    """Scans the resumes/ directory and syncs all files into the database."""
-    return resume_service.seed_resumes(db)
-
-
-@router.get("/active", response_model=Optional[ResumeOut])
-def get_active_resume(db: Session = Depends(get_db)):
-    """Returns the currently selected active resume for intelligence matching."""
-    resumes = resume_service.get_all_resumes(db)
+        return None
     active = next((r for r in resumes if r.is_active == 1), None)
-    if not active and resumes:
-        active = resume_service.activate_resume(db, resumes[0].id)
+    if not active:
+        active = resumes[0]
+        active.is_active = 1
+        db.commit()
+        db.refresh(active)
     return active
 
 
-@router.get("/{resume_id}", response_model=ResumeOut)
-def get_resume(resume_id: int, db: Session = Depends(get_db)):
-    """Retrieve full resume record including extracted text and LaTeX source."""
-    resume = resume_service.get_resume_by_id(db, resume_id)
-    if not resume:
-        raise HTTPException(status_code=404, detail="Resume not found")
-    return resume
-
-
-@router.get("/{resume_id}/pdf")
-def stream_resume_pdf(resume_id: int, db: Session = Depends(get_db)):
-    """Streams the resume PDF for in-browser iframe preview."""
-    pdf_path = resume_service.get_pdf_path(db, resume_id)
-    if not pdf_path or not pdf_path.exists():
-        raise HTTPException(status_code=404, detail="PDF file not found for this resume")
-    return FileResponse(
-        path=str(pdf_path),
-        media_type="application/pdf",
-        filename=pdf_path.name,
-        headers={"Content-Disposition": f'inline; filename="{pdf_path.name}"'}
-    )
-
-
-@router.get("/{resume_id}/export-tex")
-def export_resume_tex(resume_id: int, db: Session = Depends(get_db)):
-    """Downloads the resume LaTeX source file."""
-    resume = resume_service.get_resume_by_id(db, resume_id)
-    if not resume or not resume.latex_source:
-        raise HTTPException(status_code=404, detail="LaTeX source not found for this resume")
-    filename = resume.latex_filename or f"resume_{resume.id}.tex"
-    return Response(
-        content=resume.latex_source,
-        media_type="application/x-tex; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
-
-
-@router.put("/{resume_id}/latex", response_model=ResumeOut)
-def update_latex(resume_id: int, payload: ResumeLatexUpdate, db: Session = Depends(get_db)):
-    """Saves updated LaTeX source code and refreshes extracted plain text."""
-    updated = resume_service.update_resume_latex(db, resume_id, payload.latex_source)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Resume not found")
-    return updated
-
-
-@router.post("/{resume_id}/activate", response_model=ResumeOut)
-def activate_resume(resume_id: int, db: Session = Depends(get_db)):
-    """Designates this resume as the active version for job matching."""
-    activated = resume_service.activate_resume(db, resume_id)
-    if not activated:
-        raise HTTPException(status_code=404, detail="Resume not found")
-    return activated
-
-
-@router.post("/upload", response_model=ResumeOut)
+@router.post("/upload", response_model=ResumeOut, status_code=status.HTTP_201_CREATED, summary="Upload PDF, DOCX, or TXT resume securely")
 async def upload_resume(
     name: str = Form(...),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Upload a new PDF or TeX resume file."""
-    filename = file.filename or "uploaded_resume"
-    ext = Path(filename).suffix.lower()
-    if ext not in [".pdf", ".tex"]:
+    orig_name = Path(file.filename or "resume.pdf").name
+    ext = Path(orig_name).suffix.lower()
+    if ext not in (".pdf", ".docx", ".txt"):
         raise HTTPException(
             status_code=400,
-            detail="Only .pdf and .tex files are supported for resume management"
+            detail="Only .pdf, .docx, and .txt files are supported. Use Overleaf externally for LaTeX editing.",
         )
 
-    resumes_dir = resume_service.get_resumes_dir()
-    save_path = resumes_dir / filename
     contents = await file.read()
+    _validate_upload_magic(ext, contents)
+
+    if ext == ".txt":
+        raw_text = contents.decode("utf-8", errors="replace").strip()
+    else:
+        try:
+            raw_text, _, _ = parse_document(orig_name, contents)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    if not raw_text or len(raw_text.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Could not extract readable text from this file.")
+
+    # Save binary safely with UUID filename inside user-isolated uploads directory
+    safe_stored_name = f"{uuid.uuid4().hex}{ext}"
+    save_path = _user_upload_dir(current_user.id) / safe_stored_name
     save_path.write_bytes(contents)
 
-    latex_source = None
-    raw_text = None
-    pdf_filename = None
-    latex_filename = None
+    # Mark new upload active by default
+    db.query(ResumeDocument).filter(ResumeDocument.user_id == current_user.id).update({"is_active": 0})
 
-    if ext == ".pdf":
-        pdf_filename = filename
-        raw_text = resume_service.extract_text_from_pdf(save_path)
-    elif ext == ".tex":
-        latex_filename = filename
-        latex_source = contents.decode("utf-8", errors="replace")
-        raw_text = resume_service.clean_latex_to_text(latex_source)
-
-    # Check if a record exists
-    existing = db.query(resume_service.ResumeDocument).filter(
-        resume_service.ResumeDocument.name == name
-    ).first()
-
-    if existing:
-        if ext == ".pdf":
-            existing.pdf_filename = pdf_filename
-            existing.raw_text = raw_text
-        elif ext == ".tex":
-            existing.latex_filename = latex_filename
-            existing.latex_source = latex_source
-            if not existing.raw_text:
-                existing.raw_text = raw_text
-        existing.updated_at = resume_service.utcnow()
-        db.commit()
-        db.refresh(existing)
-        return existing
-    else:
-        is_active = 1 if db.query(resume_service.ResumeDocument).count() == 0 else 0
-        new_resume = resume_service.ResumeDocument(
-            name=name,
-            pdf_filename=pdf_filename,
-            latex_filename=latex_filename,
-            raw_text=raw_text,
-            latex_source=latex_source,
-            is_active=is_active,
-        )
-        db.add(new_resume)
-        db.commit()
-        db.refresh(new_resume)
-        return new_resume
+    resume = ResumeDocument(
+        user_id=current_user.id,
+        name=name.strip() or Path(orig_name).stem,
+        pdf_filename=orig_name if ext == ".pdf" else None,
+        stored_filename=safe_stored_name,
+        raw_text=raw_text.strip(),
+        is_active=1,
+    )
+    db.add(resume)
+    db.commit()
+    db.refresh(resume)
+    return resume
 
 
-@router.get("/active/top-matches", response_model=TopJobMatchesResponse)
-def get_top_job_matches_for_active_resume(db: Session = Depends(get_db)):
-    """Computes Top 5 matching JPMC job listings for the current active resume."""
-    resumes = resume_service.get_all_resumes(db)
-    active = next((r for r in resumes if r.is_active == 1), None)
-    if not active and resumes:
-        active = resumes[0]
+@router.post("/text", response_model=ResumeOut, status_code=status.HTTP_201_CREATED, summary="Save pasted resume text")
+def create_text_resume(
+    payload: ResumeTextCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db.query(ResumeDocument).filter(ResumeDocument.user_id == current_user.id).update({"is_active": 0})
+    resume = ResumeDocument(
+        user_id=current_user.id,
+        name=payload.name.strip(),
+        raw_text=payload.raw_text.strip(),
+        is_active=1,
+    )
+    db.add(resume)
+    db.commit()
+    db.refresh(resume)
+    return resume
 
-    if not active:
-        raise HTTPException(status_code=404, detail="No active resume found in repository")
 
-    # Fetch available analysable jobs
-    available_jobs = db.query(JobListing).filter(JobListing.status == "Available").all()
-    if not available_jobs:
-        # If no available jobs, query all jobs
-        available_jobs = db.query(JobListing).all()
+@router.post("/{resume_id}/activate", response_model=ResumeOut, summary="Set a resume as active")
+def activate_resume(
+    resume_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    target = (
+        db.query(ResumeDocument)
+        .filter(ResumeDocument.id == resume_id, ResumeDocument.user_id == current_user.id)
+        .first()
+    )
+    if not target:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    db.query(ResumeDocument).filter(ResumeDocument.user_id == current_user.id).update({"is_active": 0})
+    target.is_active = 1
+    target.updated_at = utcnow()
+    db.commit()
+    db.refresh(target)
+    return target
 
-    top_matches = rank_top_jobs_for_resume(active.raw_text or "", available_jobs, top_n=5)
 
-    return TopJobMatchesResponse(
-        active_resume_id=active.id,
-        active_resume_name=active.name,
-        top_matches=top_matches,
+@router.get("/{resume_id}/pdf", summary="Stream uploaded PDF resume for preview")
+def stream_resume_pdf(
+    resume_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    target = (
+        db.query(ResumeDocument)
+        .filter(ResumeDocument.id == resume_id, ResumeDocument.user_id == current_user.id)
+        .first()
+    )
+    if not target or not target.stored_filename or not target.stored_filename.endswith(".pdf"):
+        raise HTTPException(status_code=404, detail="PDF file not found for this resume")
+    file_path = _user_upload_dir(current_user.id) / Path(target.stored_filename).name
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Stored PDF file not found on disk")
+    return FileResponse(
+        path=str(file_path),
+        media_type="application/pdf",
+        filename=target.pdf_filename or "resume.pdf",
+        headers={"Content-Disposition": f'inline; filename="{target.pdf_filename or "resume.pdf"}"'},
     )
 
 
-@router.get("/{resume_id}/match-job/{job_id}", response_model=Optional[ExplainableMatchResponse])
-def get_cached_job_match(
+@router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user resume")
+def delete_resume(
     resume_id: int,
-    job_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Retrieves previously cached Explainable AI evaluation for a resume-job pair.
-    Makes ZERO external API calls.
-    """
-    resume = resume_service.get_resume_by_id(db, resume_id)
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
-    if not resume or not job:
-        return None
-
-    resume_text = resume.raw_text or resume.latex_source or ""
-    job_text = job.original_description or f"{job.title} {job.responsibilities or ''}"
-    content_hash = hashlib.sha256((resume_text + job_text).encode("utf-8")).hexdigest()
-
-    cached = db.query(LLMEvaluation).filter(
-        LLMEvaluation.resume_id == resume_id,
-        LLMEvaluation.job_id == job_id,
-        LLMEvaluation.content_hash == content_hash,
-    ).first()
-
-    if cached:
-        try:
-            data = json.loads(cached.evaluation_json)
-            data["is_cached"] = True
-            return ExplainableMatchResponse(**data)
-        except Exception:
-            pass
-
-    return None
-
-
-@router.post("/{resume_id}/match-job/{job_id}", response_model=ExplainableMatchResponse)
-def evaluate_resume_against_job(
-    resume_id: int,
-    job_id: int,
-    force_refresh: bool = Query(default=False, description="Bypass cache and force a new Gemini evaluation"),
-    db: Session = Depends(get_db),
-):
-    """
-    Evaluates a specific resume against a target JPMC job listing.
-    Includes persistent SQLite caching: only makes an external API call when
-    never evaluated before or when force_refresh=true.
-    """
-    resume = resume_service.get_resume_by_id(db, resume_id)
-    if not resume:
+    target = (
+        db.query(ResumeDocument)
+        .filter(ResumeDocument.id == resume_id, ResumeDocument.user_id == current_user.id)
+        .first()
+    )
+    if not target:
         raise HTTPException(status_code=404, detail="Resume not found")
-
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job listing not found")
-
-    resume_text = resume.raw_text or resume.latex_source or ""
-    job_text = job.original_description or f"{job.title} {job.responsibilities or ''}"
-    content_hash = hashlib.sha256((resume_text + job_text).encode("utf-8")).hexdigest()
-
-    # 1. Check local cache first if not force_refresh
-    if not force_refresh:
-        cached = db.query(LLMEvaluation).filter(
-            LLMEvaluation.resume_id == resume_id,
-            LLMEvaluation.job_id == job_id,
-            LLMEvaluation.content_hash == content_hash,
-        ).first()
-
-        if cached:
-            try:
-                data = json.loads(cached.evaluation_json)
-                data["is_cached"] = True
-                return ExplainableMatchResponse(**data)
-            except Exception:
-                pass
-
-    # 2. Generate new evaluation (calls Gemini if key present, else offline taxonomy)
-    evaluation = explainable_resume_match(resume_text, job)
-    evaluation.is_cached = False
-
-    # 3. Save to persistent cache in SQLite
-    try:
-        eval_dict = evaluation.model_dump()
-        eval_json = json.dumps(eval_dict)
-
-        existing = db.query(LLMEvaluation).filter(
-            LLMEvaluation.resume_id == resume_id,
-            LLMEvaluation.job_id == job_id,
-        ).first()
-
-        if existing:
-            existing.content_hash = content_hash
-            existing.evaluation_json = eval_json
-            existing.is_llm_powered = 1 if evaluation.is_llm_powered else 0
-            existing.updated_at = utcnow()
-        else:
-            new_record = LLMEvaluation(
-                resume_id=resume_id,
-                job_id=job_id,
-                content_hash=content_hash,
-                evaluation_json=eval_json,
-                is_llm_powered=1 if evaluation.is_llm_powered else 0,
-            )
-            db.add(new_record)
-
-        db.commit()
-    except Exception as e:
-        print(f"Warning: could not cache LLM evaluation in SQLite: {e}")
-        db.rollback()
-
-    return evaluation
-
+    if target.stored_filename:
+        file_path = _user_upload_dir(current_user.id) / Path(target.stored_filename).name
+        if file_path.exists():
+            file_path.unlink(missing_ok=True)
+    db.delete(target)
+    db.commit()

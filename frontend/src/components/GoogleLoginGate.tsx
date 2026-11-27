@@ -1,0 +1,120 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Compass, Lock } from 'lucide-react';
+import { loginWithGoogle } from '../services/api';
+import { AuthUser } from '../types';
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: {
+          initialize: (cfg: {
+            client_id: string;
+            callback: (resp: { credential: string }) => void;
+          }) => void;
+          renderButton: (el: HTMLElement, opts: Record<string, any>) => void;
+        };
+      };
+    };
+  }
+}
+
+let initializedClientId: string | null = null;
+
+interface GoogleLoginGateProps {
+  clientId: string;
+  onSuccess: (user: AuthUser) => void;
+}
+
+export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({ clientId, onSuccess }) => {
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+  const onSuccessRef = useRef(onSuccess);
+  onSuccessRef.current = onSuccess;
+
+  const [error, setError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!clientId) return;
+
+    const initGsi = () => {
+      if (!window.google?.accounts?.id || !buttonRef.current) return;
+      if (initializedClientId !== clientId) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (resp) => {
+            try {
+              setSigningIn(true);
+              setError(null);
+              const user = await loginWithGoogle(resp.credential);
+              onSuccessRef.current(user);
+            } catch (err: any) {
+              setError(err?.message || 'Google Sign-In failed');
+            } finally {
+              setSigningIn(false);
+            }
+          },
+        });
+        initializedClientId = clientId;
+      }
+      buttonRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: 280,
+      });
+    };
+
+    if (window.google?.accounts?.id) {
+      initGsi();
+      return;
+    }
+
+    const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existing) {
+      existing.addEventListener('load', initGsi);
+      return () => existing.removeEventListener('load', initGsi);
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initGsi;
+    document.head.appendChild(script);
+  }, [clientId]);
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center space-y-5">
+        <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center mx-auto">
+          <Compass className="w-6 h-6" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">Career Intelligence</h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Sign in with Google to access your private Experience Vault, Resumes, and Roadmap.
+          </p>
+        </div>
+
+        {!clientId ? (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2 text-left">
+            <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>Missing GOOGLE_CLIENT_ID in environment configuration.</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3">
+            <div ref={buttonRef} className="min-h-[44px]" />
+            {signingIn && <span className="text-xs text-slate-500">Verifying session...</span>}
+          </div>
+        )}
+
+        {error && (
+          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+            {error}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

@@ -1,6 +1,7 @@
 # ==============================================================================
-# JPMorgan Career Intelligence (JCI) - Production Multi-Stage Dockerfile
-# Serves both the compiled React/Vite frontend and FastAPI backend on port 8000.
+# JPMorgan Career Intelligence (JCI) v3.0 - Multi-Stage Production Dockerfile
+# Supports dynamic cloud $PORT, PostgreSQL via DATABASE_URL, and serves both
+# the mobile-first React UI and FastAPI backend on a single port.
 # ==============================================================================
 
 # --- Stage 1: Build React + TypeScript Frontend ---
@@ -22,8 +23,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend \
     JCI_HOST=0.0.0.0 \
-    JCI_PORT=8000 \
-    JCI_SERVE_FRONTEND=true
+    PORT=8000 \
+    JCI_SERVE_FRONTEND=true \
+    JCI_COOKIE_SECURE=true
 
 WORKDIR /app
 
@@ -32,10 +34,9 @@ COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r backend/requirements.txt
 
-# Copy backend source, research baseline dataset, and resumes
+# Copy backend source and shared baseline job dataset (no personal resumes baked in)
 COPY backend/ ./backend/
 COPY .docs/Job_Listings.md ./.docs/Job_Listings.md
-COPY resumes/ ./resumes/
 
 # Copy compiled frontend static assets from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
@@ -46,6 +47,6 @@ RUN mkdir -p /app/data /app/data/backups /app/uploads
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')" || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.getenv(\"PORT\", \"8000\")}/api/health')" || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
