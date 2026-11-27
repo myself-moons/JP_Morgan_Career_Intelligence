@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import Company, JobListing, User
 from app.models.schemas import (
@@ -76,14 +77,21 @@ def build_job_out(job: JobListing) -> JobOut:
 
 
 @router.get("/next-code", response_model=NextCodeResponse, summary="Get auto-incremented numerical requisition code")
-def get_next_job_code(db: Session = Depends(get_db)):
+def get_next_job_code(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Generates the next sequential numerical job code (e.g. JB-1, JB-2)."""
     next_code = compute_next_job_code(db)
     return NextCodeResponse(next_code=next_code)
 
 
 @router.post("/parse-text", response_model=ParsedFields, summary="Extract structured fields from raw text")
-def parse_raw_text(payload: ParseTextRequest, db: Session = Depends(get_db)):
+def parse_raw_text(
+    payload: ParseTextRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Extracts job title, company, location, role family, and structured sections from text."""
     parsed = extract_job_metadata(payload.text, payload.filename)
     suggested_code = compute_next_job_code(db)
@@ -190,11 +198,22 @@ def create_job(
 
 
 @router.post("/upload", response_model=UploadResponse, summary="Extract text and auto-populate fields from uploaded PDF/DOCX")
-async def upload_job_document(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_job_document(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Extract, parse sections, and auto-populate metadata from uploaded document (FR-02, TC-02..TC-05)."""
     try:
         content = await file.read()
+        if len(content) > settings.MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Uploaded file exceeds maximum allowed size ({settings.MAX_UPLOAD_BYTES // (1024 * 1024)} MB).",
+            )
         extracted_text, char_count, line_count = parse_document(file.filename, content)
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -269,8 +288,12 @@ def get_jobs(
 
     jobs = query.order_by(JobListing.id.asc()).all()
 
-    # Aggregate total and analysable counts across full collection
-    all_jobs = db.query(JobListing).all()
+    # Aggregate total and analysable counts scoped to baseline + current user's jobs
+    all_jobs = (
+        db.query(JobListing)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .all()
+    )
     total_count = len(all_jobs)
     analysable_count = sum(1 for j in all_jobs if j.status.lower() == "available")
 
@@ -307,6 +330,11 @@ def get_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job record with ID {job_id} not found.",
         )
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Shared baseline JPMorgan Chase postings are read-only.",
+        )
     return build_job_out(job)
 
 
@@ -328,6 +356,11 @@ def update_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job record with ID {job_id} not found.",
+        )
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Shared baseline JPMorgan Chase postings are read-only.",
         )
 
     if payload.title is not None:
@@ -378,6 +411,11 @@ def delete_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job record with ID {job_id} not found.",
         )
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Shared baseline JPMorgan Chase postings are read-only.",
+        )
     deleted_title = job.title
     db.delete(job)
     db.commit()
@@ -385,16 +423,33 @@ def delete_job(
 
 
 @router.post("/seed", summary="Seed 11 baseline JPMorgan Chase jobs")
-def seed_jobs(db: Session = Depends(get_db)):
+def seed_jobs(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Seed the 11 JPMorgan Chase research jobs into SQLite database."""
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Baseline seeding is restricted in multi-user mode.",
+        )
     from app.core.seed import seed_baseline_jobs
     count = seed_baseline_jobs(db)
     return {"status": "success", "seeded_count": count}
 
 
 @router.post("/sync", response_model=SyncResponse, summary="Sync live job requisitions from JPMorgan Chase careers API")
-def sync_jobs(payload: Optional[SyncRequest] = None, db: Session = Depends(get_db)):
+def sync_jobs(
+    payload: Optional[SyncRequest] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Pulls live job postings from Oracle Cloud CE site CX_1001 for Mumbai/Goregaon."""
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Shared Oracle Cloud job sync is restricted to workspace admins in multi-user mode.",
+        )
     limit = payload.limit if payload else 25
     dry_run = payload.dry_run if payload else False
     result = sync_jpmc_jobs(db, limit=limit, dry_run=dry_run)

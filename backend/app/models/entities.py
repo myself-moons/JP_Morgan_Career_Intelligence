@@ -147,6 +147,16 @@ class UserJobAIScore(Base):
     )
 
 
+class AIUsageLog(Base):
+    """Persistent per-user AI call log so rate limits survive restarts and multi-instance scaling."""
+    __tablename__ = "ai_usage_logs"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    endpoint = Column(String(60), nullable=False, default="ai")
+    created_at = Column(DateTime, default=utcnow, nullable=False, index=True)
+
+
 class Skill(Base):
     __tablename__ = "skills"
 

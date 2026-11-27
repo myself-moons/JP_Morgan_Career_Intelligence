@@ -1,8 +1,11 @@
+import logging
 import os
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
@@ -25,10 +28,30 @@ from app.api.taxonomy import router as taxonomy_router
 from app.api.vault import router as vault_router
 
 
+logger = logging.getLogger("jci.security")
+
+# Per-IP sliding-window limiters (protects Cloud Run backend from burst floods & brute force)
+_IP_REQUEST_WINDOWS: dict[str, deque] = defaultdict(deque)
+_AUTH_IP_WINDOWS: dict[str, deque] = defaultdict(deque)
+
+
+def _extract_client_ip(request: Request) -> str:
+    xff = request.headers.get("x-forwarded-for", "").strip()
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
     settings.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+    if settings.AUTH_REQUIRED and settings.USING_EPHEMERAL_JWT_SECRET:
+        logger.warning(
+            "SECURITY WARNING: AUTH_REQUIRED=true without a fixed JWT_SECRET. "
+            "Set JWT_SECRET in your environment so sessions survive restarts and scaling."
+        )
 
     init_db()
 
@@ -64,11 +87,55 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def security_and_traffic_middleware(request: Request, call_next):
+    path = request.url.path
+
+    # 1. Reject oversized payloads before buffering
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit():
+        if int(content_length) > settings.MAX_UPLOAD_BYTES + 1024 * 1024:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Request payload exceeds allowed size limit."},
+            )
+
+    # 2. Per-IP burst protection for API routes (allow internal health probes and TestClient without XFF)
+    client_ip = _extract_client_ip(request)
+    is_test_client = client_ip == "testclient" and not request.headers.get("x-forwarded-for")
+    if path.startswith("/api") and path != "/api/health" and not is_test_client:
+        now = time.time()
+        ip_win = _IP_REQUEST_WINDOWS[client_ip]
+        while ip_win and (now - ip_win[0]) > 60:
+            ip_win.popleft()
+        if len(ip_win) >= settings.GLOBAL_IP_RATE_LIMIT_PER_MIN:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests from this IP. Please slow down."},
+                headers={"Retry-After": "60"},
+            )
+        ip_win.append(now)
+
+        if path == "/api/auth/google":
+            auth_win = _AUTH_IP_WINDOWS[client_ip]
+            while auth_win and (now - auth_win[0]) > 60:
+                auth_win.popleft()
+            if len(auth_win) >= settings.AUTH_IP_RATE_LIMIT_PER_MIN:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many login attempts. Please wait a minute and retry."},
+                    headers={"Retry-After": "60"},
+                )
+            auth_win.append(now)
+
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+    if settings.COOKIE_SECURE:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    if path.startswith(("/api/auth", "/api/vault", "/api/resumes", "/api/analytics")):
+        response.headers.setdefault("Cache-Control", "no-store")
     return response
 
 

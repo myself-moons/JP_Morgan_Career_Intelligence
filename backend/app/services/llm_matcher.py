@@ -353,7 +353,7 @@ CRITICAL RULES:
     }
 
     try:
-        resp = requests.post(url, json=payload, timeout=25)
+        resp = requests.post(url, json=payload, timeout=settings.GEMINI_TIMEOUT_SECONDS)
         if resp.status_code == 200:
             data = resp.json()
             candidates = data.get("candidates", [])

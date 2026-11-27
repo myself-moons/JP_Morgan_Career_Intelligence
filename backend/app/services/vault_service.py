@@ -96,7 +96,7 @@ def _batch_embed_texts(texts: List[str]) -> Optional[List[List[float]]]:
         ]
     }
     try:
-        resp = requests.post(url, json=payload, timeout=20)
+        resp = requests.post(url, json=payload, timeout=min(20, settings.GEMINI_TIMEOUT_SECONDS))
         if resp.status_code == 200:
             embeddings = resp.json().get("embeddings", [])
             if len(embeddings) == len(texts):
@@ -503,7 +503,7 @@ def compare_vault_with_jobs_ai(
     missing = [s for s in jd_skills if s.lower() not in combined_user_text]
 
     if api_key and (entries or active_resume):
-        check_ai_rate_limit(user_id)
+        check_ai_rate_limit(user_id, db=db, endpoint="vault_compare")
         vault_context_str = "\n\n".join(
             f"[{c.entry_title} | match={c.similarity}]\n{redact_pii(c.chunk_text)}"
             for c in retrieved
@@ -562,7 +562,7 @@ Scoring rule for `fit_score` (integer 0-100):
         for try_model in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{try_model}:generateContent?key={api_key}"
             try:
-                resp = requests.post(url, json=payload, timeout=45)
+                resp = requests.post(url, json=payload, timeout=settings.GEMINI_TIMEOUT_SECONDS)
                 if resp.status_code == 200:
                     candidates = resp.json().get("candidates", [])
                     if candidates:

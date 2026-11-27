@@ -484,7 +484,7 @@ def ai_disambiguate_skill(
         }
 
         try:
-            resp = requests.post(url, json=payload, timeout=15)
+            resp = requests.post(url, json=payload, timeout=min(15, settings.GEMINI_TIMEOUT_SECONDS))
             if resp.status_code == 200:
                 data = resp.json()
                 candidates = data.get("candidates", [])

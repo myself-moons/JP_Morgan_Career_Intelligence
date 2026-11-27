@@ -62,11 +62,12 @@ class Settings:
 
     # Authentication & Session Security (Google OAuth 2.0 + HttpOnly JWT cookies)
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "").strip()
-    JWT_SECRET: str = (
+    _RAW_JWT_SECRET: str = (
         os.getenv("JWT_SECRET", "").strip()
         or os.getenv("JCI_JWT_SECRET", "").strip()
-        or _EPHEMERAL_DEV_SECRET
     )
+    USING_EPHEMERAL_JWT_SECRET: bool = not bool(_RAW_JWT_SECRET)
+    JWT_SECRET: str = _RAW_JWT_SECRET or _EPHEMERAL_DEV_SECRET
     AUTH_REQUIRED: bool = os.getenv(
         "JCI_AUTH_REQUIRED",
         "true" if os.getenv("GOOGLE_CLIENT_ID", "").strip() else "false",
@@ -84,7 +85,12 @@ class Settings:
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     GEMINI_DEEP_MODEL: str = os.getenv("GEMINI_DEEP_MODEL", "gemini-pro-latest")
     GEMINI_EMBEDDING_MODEL: str = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
+    GEMINI_TIMEOUT_SECONDS: int = max(5, int(os.getenv("JCI_GEMINI_TIMEOUT_SECONDS", "45")))
     AI_RATE_LIMIT_PER_HOUR: int = int(os.getenv("JCI_AI_RATE_LIMIT_PER_HOUR", "30"))
+
+    # Per-IP Edge Traffic & Brute-Force Guardrails
+    GLOBAL_IP_RATE_LIMIT_PER_MIN: int = max(10, int(os.getenv("JCI_IP_RATE_LIMIT_PER_MIN", "120")))
+    AUTH_IP_RATE_LIMIT_PER_MIN: int = max(5, int(os.getenv("JCI_AUTH_IP_RATE_LIMIT_PER_MIN", "20")))
 
     # Upload Safety Limits
     MAX_UPLOAD_BYTES: int = int(os.getenv("JCI_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))

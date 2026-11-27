@@ -39,8 +39,11 @@ def export_jobs_data(
     role_family: Optional[str] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> Tuple[bytes, str, str]:
     query = db.query(JobListing)
+    if user_id is not None:
+        query = query.filter(or_(JobListing.user_id.is_(None), JobListing.user_id == user_id))
     if role_family and role_family != "All":
         query = query.filter(JobListing.role_family.ilike(f"%{role_family.split(':')[0].strip()}%"))
     if status and status != "All":

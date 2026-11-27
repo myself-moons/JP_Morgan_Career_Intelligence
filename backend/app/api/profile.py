@@ -2,8 +2,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
-from app.models.entities import ProfileEvidence
+from app.models.entities import ProfileEvidence, User
 from app.models.schemas import (
     ProfileEvidenceCreate,
     ProfileEvidenceOut,
@@ -24,18 +26,39 @@ from app.services.profile_service import (
 router = APIRouter(prefix="/profile", tags=["Profile Evidence & Matching (M5)"])
 
 
+def _require_legacy_local_access(current_user: User = Depends(get_current_user)) -> User:
+    """Blocks shared un-isolated legacy v2 endpoints for multi-user Google sessions."""
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Legacy v2 profile endpoint is disabled in multi-user mode. Use Experience Vault instead.",
+        )
+    return current_user
+
+
 @router.get("", response_model=ProfileOverviewResponse, summary="Get user profile and CardLyze-attributed skill evidence")
-def get_profile(db: Session = Depends(get_db)):
+def get_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(_require_legacy_local_access),
+):
     return get_profile_overview(db)
 
 
 @router.put("", response_model=UserProfileOut, summary="Update user profile summary, education, and experience")
-def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db)):
+def update_profile(
+    payload: UserProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(_require_legacy_local_access),
+):
     return update_user_profile(db, payload)
 
 
 @router.post("/evidence", response_model=ProfileEvidenceOut, status_code=status.HTTP_201_CREATED, summary="Create or update skill evidence & contribution split (FR-18, FR-19)")
-def create_or_update_evidence(payload: ProfileEvidenceCreate, db: Session = Depends(get_db)):
+def create_or_update_evidence(
+    payload: ProfileEvidenceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(_require_legacy_local_access),
+):
     return upsert_profile_evidence(
         db=db,
         skill_id=payload.skill_id,
@@ -48,7 +71,12 @@ def create_or_update_evidence(payload: ProfileEvidenceCreate, db: Session = Depe
 
 
 @router.put("/evidence/{evidence_id}", response_model=ProfileEvidenceOut, summary="Update an existing skill evidence entry")
-def update_evidence(evidence_id: int, payload: ProfileEvidenceUpdate, db: Session = Depends(get_db)):
+def update_evidence(
+    evidence_id: int,
+    payload: ProfileEvidenceUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(_require_legacy_local_access),
+):
     ev = db.query(ProfileEvidence).filter(ProfileEvidence.id == evidence_id).first()
     if not ev:
         raise HTTPException(status_code=404, detail="Profile evidence entry not found")
@@ -64,7 +92,11 @@ def update_evidence(evidence_id: int, payload: ProfileEvidenceUpdate, db: Sessio
 
 
 @router.delete("/evidence/{evidence_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a profile evidence record")
-def delete_evidence(evidence_id: int, db: Session = Depends(get_db)):
+def delete_evidence(
+    evidence_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(_require_legacy_local_access),
+):
     ev = db.query(ProfileEvidence).filter(ProfileEvidence.id == evidence_id).first()
     if not ev:
         raise HTTPException(status_code=404, detail="Profile evidence entry not found")
@@ -77,6 +109,7 @@ def match_profile_to_job(
     job_id: int,
     resume_id: Optional[int] = Query(None, description="Optional resume ID (defaults to active resume)"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(_require_legacy_local_access),
 ):
     result = evaluate_profile_vs_job(db, job_id=job_id, resume_id=resume_id)
     if not result:

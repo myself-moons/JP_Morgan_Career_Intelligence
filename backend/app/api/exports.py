@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.models.entities import User
 from app.services.export_service import (
     export_coverage_data,
     export_jobs_data,
@@ -21,9 +23,15 @@ def export_jobs(
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     content, media_type, ext = export_jobs_data(
-        db, fmt=format, role_family=role_family, status=status, search=search
+        db,
+        fmt=format,
+        role_family=role_family,
+        status=status,
+        search=search,
+        user_id=current_user.id,
     )
     return Response(
         content=content,
@@ -39,6 +47,7 @@ def export_coverage(
     category: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     content, media_type, ext = export_coverage_data(
         db, fmt=format, role_family=role_family, category=category, search=search
@@ -54,6 +63,7 @@ def export_coverage(
 def export_matrix(
     format: str = Query("csv", description="Export format: csv or xlsx"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     content, media_type, ext = export_matrix_data(db, fmt=format)
     return Response(
@@ -67,6 +77,7 @@ def export_matrix(
 def export_learning(
     format: str = Query("csv", description="Export format: csv or xlsx"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     content, media_type, ext = export_learning_data(db, fmt=format)
     return Response(

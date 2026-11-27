@@ -300,7 +300,7 @@ def review_roadmap_with_ai(
 
     api_key = settings.GEMINI_API_KEY.strip()
     if api_key and (roadmap_items or jobs):
-        check_ai_rate_limit(user_id)
+        check_ai_rate_limit(user_id, db=db, endpoint="roadmap_review")
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
 
         roadmap_text = "\n".join(
@@ -347,7 +347,7 @@ Return strictly valid JSON:
         for try_model in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{try_model}:generateContent?key={api_key}"
             try:
-                resp = requests.post(url, json=payload, timeout=30)
+                resp = requests.post(url, json=payload, timeout=settings.GEMINI_TIMEOUT_SECONDS)
                 if resp.status_code == 200:
                     candidates = resp.json().get("candidates", [])
                     if candidates:

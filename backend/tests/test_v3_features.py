@@ -1,13 +1,15 @@
 from unittest.mock import MagicMock, patch
 import json
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from app.core.auth import create_session_token, get_current_user
+from app.core.auth import _AI_CALL_TIMESTAMPS, check_ai_rate_limit, create_session_token, get_current_user
 from app.core.config import _normalize_database_url, settings
 from app.core.database import SessionLocal, init_db
 from app.core.seed import seed_baseline_jobs
-from app.main import app
+from app.main import _AUTH_IP_WINDOWS, _IP_REQUEST_WINDOWS, app
 from app.models.entities import (
+    AIUsageLog,
     ExperienceEntry,
     JobListing,
     ResumeDocument,
@@ -387,3 +389,119 @@ def test_vault_ai_score_persists_to_dashboard_and_invalidates_on_edit():
     finally:
         db.close()
     client.delete(f"/api/vault/entries/{entry['id']}")
+
+
+def test_security_lockdown_privilege_boundaries_and_rate_limiting():
+    """
+    Verify:
+    1. Unauthenticated requests return 401 across taxonomy, exports, jobs, and legacy routes when AUTH_REQUIRED=True.
+    2. Signed-in standard users cannot modify/delete shared baseline jobs or call admin/legacy v2 endpoints (403).
+    3. DB-backed AI rate limiter persists across restarts even when in-memory dict is cleared.
+    4. Per-IP brute-force protection returns 429 + Retry-After on excessive /api/auth/google requests,
+       and security headers (Cache-Control: no-store, Permissions-Policy, etc.) are present.
+    """
+    init_db()
+    orig_override = app.dependency_overrides.pop(get_current_user, None)
+    db = SessionLocal()
+    u_sec = None
+    try:
+        u_sec = db.query(User).filter(User.google_sub == "sub-sec-audit").first()
+        if not u_sec:
+            u_sec = User(
+                google_sub="sub-sec-audit",
+                email="sec_audit@example.com",
+                display_name="Sec Audit",
+                is_local_dev=0,
+            )
+            db.add(u_sec)
+            db.commit()
+            db.refresh(u_sec)
+
+        client = TestClient(app)
+        with patch.object(settings, "AUTH_REQUIRED", True):
+            # 1. All protected endpoints must reject unauthenticated callers
+            for method, path, body in [
+                ("GET", "/api/exports/jobs", None),
+                ("GET", "/api/exports/coverage", None),
+                ("GET", "/api/taxonomy/skills", None),
+                ("POST", "/api/taxonomy/ai-disambiguate", {"phrase": "Py"}),
+                ("GET", "/api/jobs/next-code", None),
+                ("POST", "/api/jobs/parse-text", {"text": "Sample job description text"}),
+                ("GET", "/api/profile", None),
+                ("GET", "/api/learning/resources", None),
+            ]:
+                resp = client.request(method, path, json=body)
+                assert resp.status_code == 401, f"{method} {path} returned {resp.status_code}"
+
+            # Public health & auth config remain reachable and carry security headers
+            health_resp = client.get("/api/health")
+            assert health_resp.status_code == 200
+            assert health_resp.headers.get("X-Content-Type-Options") == "nosniff"
+            assert "Permissions-Policy" in health_resp.headers
+
+            # 2. Authenticate as normal Google user
+            tok = create_session_token(u_sec)
+            client.cookies.set(settings.SESSION_COOKIE_NAME, tok)
+
+            sess_resp = client.get("/api/auth/session")
+            assert sess_resp.status_code == 200
+            assert sess_resp.headers.get("Cache-Control") == "no-store"
+
+            # Shared baseline job cannot be edited/deleted by regular user
+            baseline_job = db.query(JobListing).filter(JobListing.user_id.is_(None)).first()
+            if baseline_job:
+                assert client.put(f"/api/jobs/{baseline_job.id}", json={"title": "Hacked"}).status_code == 403
+                assert client.delete(f"/api/jobs/{baseline_job.id}").status_code == 403
+
+            # Legacy v2 & global admin endpoints blocked (403)
+            assert client.get("/api/profile").status_code == 403
+            assert client.get("/api/learning/resources").status_code == 403
+            assert client.post("/api/jobs/seed").status_code == 403
+            assert client.post("/api/taxonomy/skills", json={"canonical_name": "UnauthorizedSkill"}).status_code == 403
+            assert client.post("/api/taxonomy/jobs/batch-extract-skills").status_code == 403
+
+            # Authenticated export succeeds
+            exp_resp = client.get("/api/exports/jobs?format=csv")
+            assert exp_resp.status_code == 200
+
+            # 3. DB-backed AI rate limit survives memory clear
+            db.query(AIUsageLog).filter(AIUsageLog.user_id == u_sec.id).delete()
+            db.commit()
+            with patch.object(settings, "AI_RATE_LIMIT_PER_HOUR", 2):
+                check_ai_rate_limit(u_sec.id, db=db, endpoint="test")
+                check_ai_rate_limit(u_sec.id, db=db, endpoint="test")
+                _AI_CALL_TIMESTAMPS.clear()  # simulate container restart
+                try:
+                    check_ai_rate_limit(u_sec.id, db=db, endpoint="test")
+                    assert False, "Expected HTTP 429 on 3rd AI call"
+                except HTTPException as exc:
+                    assert exc.status_code == 429
+
+            # 4. Per-IP /api/auth/google burst guard returns 429
+            _IP_REQUEST_WINDOWS.clear()
+            _AUTH_IP_WINDOWS.clear()
+            with patch.object(settings, "AUTH_IP_RATE_LIMIT_PER_MIN", 5):
+                for _ in range(5):
+                    r = client.post(
+                        "/api/auth/google",
+                        json={"credential": "invalid-google-jwt-credential"},
+                        headers={"X-Forwarded-For": "203.0.113.99"},
+                    )
+                    assert r.status_code in (401, 503)
+                blocked = client.post(
+                    "/api/auth/google",
+                    json={"credential": "invalid-google-jwt-credential"},
+                    headers={"X-Forwarded-For": "203.0.113.99"},
+                )
+                assert blocked.status_code == 429
+                assert blocked.headers.get("Retry-After") == "60"
+    finally:
+        _IP_REQUEST_WINDOWS.clear()
+        _AUTH_IP_WINDOWS.clear()
+        if u_sec:
+            db.query(AIUsageLog).filter(AIUsageLog.user_id == u_sec.id).delete()
+            db.query(User).filter(User.id == u_sec.id).delete()
+            db.commit()
+        db.close()
+        if orig_override is not None:
+            app.dependency_overrides[get_current_user] = orig_override

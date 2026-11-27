@@ -10,15 +10,38 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.entities import User, utcnow
+from app.models.entities import AIUsageLog, User, utcnow
 
-# Simple in-memory per-user sliding-window rate limiter for AI endpoints
+# Fallback in-memory sliding-window rate limiter when no DB session is passed
 _AI_CALL_TIMESTAMPS: Dict[int, deque] = defaultdict(deque)
 
 
-def check_ai_rate_limit(user_id: int) -> None:
-    """Prevents single-user quota exhaustion by limiting explicit AI calls per hour."""
+def check_ai_rate_limit(
+    user_id: int,
+    db: Optional[Session] = None,
+    endpoint: str = "ai",
+) -> None:
+    """
+    Prevents single-user quota exhaustion by limiting explicit AI calls per hour.
+    Uses PostgreSQL/SQLite AIUsageLog when a Session is supplied (persists across restarts/instances).
+    """
     limit = settings.AI_RATE_LIMIT_PER_HOUR
+    if db is not None:
+        cutoff = utcnow() - timedelta(hours=1)
+        recent_count = (
+            db.query(AIUsageLog)
+            .filter(AIUsageLog.user_id == user_id, AIUsageLog.created_at >= cutoff)
+            .count()
+        )
+        if recent_count >= limit:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"AI rate limit reached ({limit} calls/hour). Cached results remain available.",
+            )
+        db.add(AIUsageLog(user_id=user_id, endpoint=endpoint[:60]))
+        db.commit()
+        return
+
     now = time.time()
     window = _AI_CALL_TIMESTAMPS[user_id]
     while window and (now - window[0]) > 3600:

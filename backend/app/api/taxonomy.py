@@ -1,9 +1,12 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.core.auth import check_ai_rate_limit, get_current_user
+from app.core.config import settings
 from app.core.database import get_db
-from app.models.entities import Skill, SkillAlias, JobSkill, JobListing
+from app.models.entities import Skill, SkillAlias, JobSkill, JobListing, User
 from app.models.schemas import (
     SkillOut,
     SkillCreate,
@@ -34,12 +37,17 @@ def suggest_skills(
     q: str = Query("", description="Prefix or substring typed by user"),
     limit: int = Query(12, ge=1, le=50),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return suggest_canonical_skills(db, query=q, limit=limit)
 
 
 @router.post("/resolve-or-create", response_model=SkillResolveResponse, summary="Resolve alternate wording or register a new short canonical skill (v3.0)")
-def resolve_or_create_skill(payload: SkillResolveRequest, db: Session = Depends(get_db)):
+def resolve_or_create_skill(
+    payload: SkillResolveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     try:
         skill, created_new, matched_via = resolve_or_create_canonical_skill(
             raw_name=payload.raw_name,
@@ -62,6 +70,7 @@ def list_skills(
     category: Optional[str] = Query(None, description="Filter by category"),
     search: Optional[str] = Query(None, description="Search canonical name or alias"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     seed_taxonomy_if_empty(db)
     query = db.query(Skill)
@@ -99,7 +108,16 @@ def list_skills(
 
 
 @router.post("/skills", response_model=SkillOut, status_code=status.HTTP_201_CREATED, summary="Add new canonical skill")
-def create_skill(payload: SkillCreate, db: Session = Depends(get_db)):
+def create_skill(
+    payload: SkillCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Global taxonomy creation is restricted in multi-user mode. Use /resolve-or-create.",
+        )
     seed_taxonomy_if_empty(db)
     norm_name = payload.canonical_name.strip()
     existing = db.query(Skill).filter(Skill.canonical_name.ilike(norm_name)).first()
@@ -139,7 +157,17 @@ def create_skill(payload: SkillCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/skills/{skill_id}/aliases", summary="Add alias to canonical skill")
-def add_alias(skill_id: int, payload: AddAliasRequest, db: Session = Depends(get_db)):
+def add_alias(
+    skill_id: int,
+    payload: AddAliasRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Global skill alias modification is restricted in multi-user mode.",
+        )
     skill = db.query(Skill).filter(Skill.id == skill_id).first()
     if not skill:
         raise HTTPException(status_code=404, detail="Canonical skill not found.")
@@ -163,9 +191,14 @@ def add_alias(skill_id: int, payload: AddAliasRequest, db: Session = Depends(get
 
 
 @router.post("/ai-disambiguate", response_model=DisambiguateResponse, summary="AI-assisted semantic taxonomy disambiguation (FR-42, TC-22)")
-def disambiguate_phrase(payload: DisambiguateRequest, db: Session = Depends(get_db)):
+def disambiguate_phrase(
+    payload: DisambiguateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     if not payload.phrase or not payload.phrase.strip():
         raise HTTPException(status_code=400, detail="Phrase is required for disambiguation.")
+    check_ai_rate_limit(current_user.id, db=db, endpoint="taxonomy_disambiguate")
     result = ai_disambiguate_skill(payload.phrase, payload.context, db)
     return DisambiguateResponse(**result)
 
@@ -173,8 +206,17 @@ def disambiguate_phrase(payload: DisambiguateRequest, db: Session = Depends(get_
 # --- Job Skill Review Endpoints (FR-14) ---
 
 @router.get("/jobs/{job_id}/skills", response_model=List[JobSkillOut], summary="List extracted skills for a job")
-def get_job_skills(job_id: int, db: Session = Depends(get_db)):
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+def get_job_skills(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    job = (
+        db.query(JobListing)
+        .filter(JobListing.id == job_id)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .first()
+    )
     if not job:
         raise HTTPException(status_code=404, detail="Job listing not found.")
 
@@ -206,10 +248,21 @@ def get_job_skills(job_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/jobs/{job_id}/extract-skills", response_model=List[JobSkillOut], summary="Run skill extraction on a job")
-def extract_job_skills(job_id: int, db: Session = Depends(get_db)):
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+def extract_job_skills(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    job = (
+        db.query(JobListing)
+        .filter(JobListing.id == job_id)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .first()
+    )
     if not job:
         raise HTTPException(status_code=404, detail="Job listing not found.")
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+        raise HTTPException(status_code=403, detail="Shared baseline job skills cannot be modified.")
 
     saved = extract_and_save_job_skills(job, db)
     out: List[JobSkillOut] = []
@@ -233,7 +286,12 @@ def extract_job_skills(job_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/jobs/batch-extract-skills", summary="Run extraction across all jobs in library")
-def batch_extract(db: Session = Depends(get_db)):
+def batch_extract(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+        raise HTTPException(status_code=403, detail="Batch extraction is restricted in multi-user mode.")
     return batch_extract_all_jobs(db)
 
 
@@ -243,7 +301,18 @@ def update_job_skill(
     job_skill_id: int,
     payload: JobSkillUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    job = (
+        db.query(JobListing)
+        .filter(JobListing.id == job_id)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .first()
+    )
+    if not job:
+        raise HTTPException(status_code=404, detail="Job listing not found.")
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+        raise HTTPException(status_code=403, detail="Shared baseline job skills cannot be modified.")
     record = (
         db.query(JobSkill)
         .filter(JobSkill.id == job_skill_id, JobSkill.job_id == job_id)
@@ -288,10 +357,18 @@ def add_manual_job_skill(
     job_id: int,
     payload: JobSkillCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    job = db.query(JobListing).filter(JobListing.id == job_id).first()
+    job = (
+        db.query(JobListing)
+        .filter(JobListing.id == job_id)
+        .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == current_user.id))
+        .first()
+    )
     if not job:
         raise HTTPException(status_code=404, detail="Job listing not found.")
+    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+        raise HTTPException(status_code=403, detail="Shared baseline job skills cannot be modified.")
     skill = db.query(Skill).filter(Skill.id == payload.skill_id).first()
     if not skill:
         raise HTTPException(status_code=404, detail="Canonical skill not found.")
