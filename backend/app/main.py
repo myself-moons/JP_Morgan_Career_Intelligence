@@ -51,7 +51,15 @@ async def lifespan(app: FastAPI):
             "Set JWT_SECRET in your environment so sessions survive restarts and scaling."
         )
 
-    init_db()
+    try:
+        init_db()
+    except Exception as exc:
+        logger.error(
+            "Database initialization failed (%s). If running locally behind a firewall that blocks "
+            "outbound port 5432, unset DATABASE_URL in .env to use local SQLite.",
+            exc,
+        )
+        raise
 
     db = SessionLocal()
     try:
