@@ -79,7 +79,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Career Intelligence, Skill Explorer, Experience Vault (Mini-RAG), and User Roadmap Platform.",
+    description="JCI Career Studio: Skill Explorer, Experience Vault (Mini-RAG), and User Roadmap Platform.",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,

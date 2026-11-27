@@ -1,2 +1,2 @@
-"""JPMorgan Career Intelligence (JCI) - Backend Application Package."""
+"""JCI Career Studio - Backend Application Package."""
 __version__ = "1.2.0"

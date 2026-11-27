@@ -1,1 +1,1 @@
-"""Backend automated test suite for JPMorgan Career Intelligence (JCI)."""
+"""Backend automated test suite for JCI Career Studio."""

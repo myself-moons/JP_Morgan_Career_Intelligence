@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-JPMorgan Career Intelligence (JCI v3.0) - Automated Multi-User Job Watcher
+JCI Career Studio (v3.0) - Automated Multi-User Job Watcher
 
 Designed to run in GitHub Actions on a daily cron ($0 cost):
 1. Queries JPMC's public Oracle Recruiting Cloud CE API for Mumbai/Goregaon roles.
@@ -72,7 +72,7 @@ def build_markdown_summary(
 ) -> str:
     """Builds an anonymized GitHub Actions Markdown Step Summary (no PII leaked)."""
     lines = [
-        "# JPMorgan Career Intelligence (v3.0) — Daily Sync Briefing",
+        "# JCI Career Studio (v3.0) — Daily Sync Briefing",
         f"**Run Timestamp:** `{timestamp} UTC`",
         "",
         "### Sync Statistics",
@@ -147,13 +147,13 @@ def build_html_email(
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Career Intelligence Daily Match Briefing</title>
+    <title>JCI Career Studio Daily Match Briefing</title>
 </head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#0f172a;margin:0;padding:16px;color:#0f172a;">
     <div style="max-width:620px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;">
         <div style="background:linear-gradient(135deg,#0f172a 0%,#005ea6 100%);padding:24px;color:#ffffff;">
             <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;opacity:0.85;font-weight:700;">
-                Career Intelligence v3.0
+                JCI Career Studio v3.0
             </div>
             <h1 style="margin:6px 0 4px 0;font-size:20px;font-weight:800;">
                 Hi {display_name}, here are your top role matches
@@ -167,13 +167,13 @@ def build_html_email(
             {match_cards}
             <div style="text-align:center;margin-top:16px;">
                 <a href="{app_url}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;">
-                    Open Career Intelligence Workspace
+                    Open JCI Career Studio
                 </a>
             </div>
         </div>
 
         <div style="background:#f8fafc;padding:14px 20px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#64748b;">
-            Sent by Career Intelligence &bull; Zero-cost automated match digest.<br>
+            Sent by JCI Career Studio &bull; Zero-cost automated match digest.<br>
             You can turn off daily alerts anytime from the bell icon in the app header.
         </div>
     </div>
@@ -193,7 +193,7 @@ def send_email_alert(
     """Sends an HTML email notification via SMTP."""
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"Career Intelligence <{smtp_user}>"
+    msg["From"] = f"JCI Career Studio <{smtp_user}>"
     msg["To"] = recipient
     msg.attach(MIMEText(html_content, "html"))
 
@@ -213,7 +213,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("JPMorgan Career Intelligence v3.0 - Multi-User Job Watcher")
+    print("JCI Career Studio v3.0 - Multi-User Job Watcher")
     print("=" * 60)
 
     init_db()
@@ -276,7 +276,7 @@ def main():
                     continue
 
                 if should_notify and smtp_user and smtp_pass and user.email:
-                    subject = f"Career Intelligence: {len(qualified)} Top Role Match(es) ({now_str} UTC)"
+                    subject = f"JCI Career Studio: {len(qualified)} Top Role Match(es) ({now_str} UTC)"
                     html_email = build_html_email(
                         display_name=user.display_name,
                         source_label=source_label,
@@ -320,7 +320,7 @@ def main():
                     )
                     try:
                         send_email_alert(
-                            subject=f"Career Intelligence: {len(qualified)} Top Role Match(es)",
+                            subject=f"JCI Career Studio: {len(qualified)} Top Role Match(es)",
                             html_content=html_email,
                             recipient=fallback_recipient,
                             smtp_host=smtp_host,

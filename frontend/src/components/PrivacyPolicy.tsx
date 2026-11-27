@@ -27,7 +27,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
             className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Career Intelligence</span>
+            <span>Back to JCI Career Studio</span>
           </button>
 
           <button
@@ -52,7 +52,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
           </div>
           <div>
             <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight">
-              {isPrivacy ? 'Privacy Policy — Career Intelligence' : 'Terms of Use — Career Intelligence'}
+              {isPrivacy ? 'Privacy Policy — JCI Career Studio' : 'Terms of Use — JCI Career Studio'}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Effective Date: November 27, 2026
@@ -67,7 +67,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
                 1. Overview
               </h2>
               <p>
-                <strong>Career Intelligence</strong> is a personal career preparation and skill-gap
+                <strong>JCI Career Studio</strong> is a personal career preparation and skill-gap
                 analysis web application. This Privacy Policy explains what information is collected
                 when you sign in with Google, how your resumes and project entries are used, and how
                 you control your data.
@@ -128,7 +128,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
                 4. Cookies &amp; Sessions
               </h2>
               <p>
-                After signing in with Google, Career Intelligence stores an{' '}
+                After signing in with Google, JCI Career Studio stores an{' '}
                 <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">HttpOnly</code>{' '}
                 session cookie (<code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">jci_session</code>)
                 strictly to keep you signed in securely over HTTPS, and stores your light/dark theme
@@ -161,7 +161,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
                 1. Purpose of the Platform
               </h2>
               <p>
-                Career Intelligence is an educational and career-preparation tool designed to help
+                JCI Career Studio is an educational and career-preparation tool designed to help
                 candidates analyze publicly posted job requirements, organize project histories, and
                 plan skill development. It is an independent tool and is not affiliated with or
                 endorsed by JPMorgan Chase &amp; Co.
@@ -205,7 +205,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({
           <div className="flex items-center gap-2">
             <Compass className="w-4 h-4 text-blue-500" />
             <span className="font-semibold text-slate-700 dark:text-slate-200">
-              Career Intelligence
+              JCI Career Studio
             </span>
           </div>
           <button

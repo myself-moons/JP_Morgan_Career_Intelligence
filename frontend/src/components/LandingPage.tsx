@@ -131,7 +131,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-sm sm:text-base font-bold tracking-tight truncate">
-                Career Intelligence
+                JCI Career Studio
               </span>
               {(version || health?.version) && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/70 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-700 shrink-0">
@@ -237,7 +237,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <div className="p-1 rounded-md bg-blue-600">
                         <Compass className="w-3.5 h-3.5 text-white" />
                       </div>
-                      <span className="text-xs font-bold">Career Intelligence</span>
+                      <span className="text-xs font-bold">JCI Career Studio</span>
                     </div>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
                       Mobile View
@@ -417,7 +417,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="space-y-1">
             <h3 className="text-base sm:text-lg font-extrabold">Ready to see how you match?</h3>
             <p className="text-xs sm:text-sm text-blue-100">
-              Sign in with Google to open your private Career Intelligence workspace.
+              Sign in with Google to open your private JCI Career Studio workspace.
             </p>
           </div>
           <button
@@ -436,7 +436,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex items-center gap-2">
             <Compass className="w-4 h-4 text-blue-500" />
             <span className="font-semibold text-slate-700 dark:text-slate-200">
-              Career Intelligence
+              JCI Career Studio
             </span>
             {(version || health?.version) && <span>&bull; v{version || health?.version}</span>}
           </div>

@@ -50,7 +50,7 @@ _EPHEMERAL_DEV_SECRET = secrets.token_urlsafe(32)
 
 
 class Settings:
-    PROJECT_NAME: str = "JPMorgan Career Intelligence"
+    PROJECT_NAME: str = "JCI Career Studio"
     PROJECT_SLUG: str = "jci"
     VERSION: str = "3.0.0"
     API_PREFIX: str = "/api"

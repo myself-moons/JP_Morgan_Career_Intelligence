@@ -1,5 +1,5 @@
 # ==============================================================================
-# JPMorgan Career Intelligence (JCI) v3.0 - Multi-Stage Production Dockerfile
+# JCI Career Studio v3.0 - Multi-Stage Production Dockerfile
 # Supports dynamic cloud $PORT, PostgreSQL via DATABASE_URL, and serves both
 # the mobile-first React UI and FastAPI backend on a single port.
 # ==============================================================================

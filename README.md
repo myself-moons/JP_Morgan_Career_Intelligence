@@ -1,4 +1,4 @@
-# JPMorgan Career Intelligence (JCI)
+# JCI Career Studio
 
 [![CI - Test & Build](https://github.com/myself-moons/JP_Morgan_Career_Intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/myself-moons/JP_Morgan_Career_Intelligence/actions/workflows/ci.yml)
 [![JPMC Daily Job Watcher](https://github.com/myself-moons/JP_Morgan_Career_Intelligence/actions/workflows/jpmc_daily_job_sync.yml/badge.svg)](https://github.com/myself-moons/JP_Morgan_Career_Intelligence/actions/workflows/jpmc_daily_job_sync.yml)
@@ -10,7 +10,7 @@
 
 **Version 2.0 | November 2026**
 
-**JPMorgan Career Intelligence (JCI)** is a personal, local-first career intelligence and decision-support platform designed to analyze, track, and align career preparation against **JPMorgan Chase** technology, data governance, and analytics opportunities. 
+**JCI Career Studio** is a personal, local-first career intelligence and decision-support platform designed to analyze, track, and align career preparation against **JPMorgan Chase** technology, data governance, and analytics opportunities. 
 
 Rather than relying on opaque ATS scoring or speculative hiring algorithms, JCI combines **deterministic NLP extraction**, **curated enterprise financial banking taxonomies**, and an **explainable AI rubric** to deliver traceable skill coverage, evidence-backed gap analysis, and autonomous live job synchronization.
 

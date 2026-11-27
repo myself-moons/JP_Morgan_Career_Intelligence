@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="min-w-0">
               <div className="flex items-center space-x-2">
                 <h1 className="text-sm sm:text-base font-bold tracking-tight truncate">
-                  Career Intelligence
+                  JCI Career Studio
                 </h1>
                 {health?.version && (
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/70 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-700 shrink-0">

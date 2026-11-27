@@ -1,4 +1,4 @@
-# Deploying & Operating JCI v3.0 on Google Cloud Run + PostgreSQL
+# Deploying & Operating JCI Career Studio (v3.0) on Google Cloud Run + PostgreSQL
 
 This repository builds into a single production container (`Dockerfile`) serving both the **mobile-first React UI** and **FastAPI API** on `PORT=8000`, backed by **Neon PostgreSQL**.
 
@@ -69,7 +69,7 @@ Open `https://jci-app-60056461331.asia-southeast1.run.app/api/health` and confir
 {
   "status": "healthy",
   "version": "3.0.0",
-  "app": "JPMorgan Career Intelligence",
+  "app": "JCI Career Studio",
   "environment": "cloud",
   "database": "postgresql",
   "database_connected": true

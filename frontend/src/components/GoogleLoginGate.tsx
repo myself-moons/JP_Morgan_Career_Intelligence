@@ -122,7 +122,7 @@ export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({
           <Compass className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Career Intelligence</h1>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">JCI Career Studio</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Sign in with Google to access your private projects, resumes, and roadmap.
           </p>

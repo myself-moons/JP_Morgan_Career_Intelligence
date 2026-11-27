@@ -21,7 +21,7 @@ def main():
         print(f"Initialized blank SQLite database at: {db_file}")
 
     print("=" * 65)
-    print(" JPMorgan Career Intelligence - Live SQLite Database Console (FR-41)")
+    print(" JCI Career Studio - Live SQLite Database Console (FR-41)")
     print("=" * 65)
     print(f" Database:     {db_file}")
     print(f" Console Web:  http://{settings.HOST}:{settings.DB_CONSOLE_PORT}")

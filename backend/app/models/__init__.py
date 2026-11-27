@@ -1,4 +1,4 @@
-"""Database models and schema definitions for JPMorgan Career Intelligence."""
+"""Database models and schema definitions for JCI Career Studio."""
 from app.models.entities import Company, JobListing
 from app.models.schemas import (
     JobCreate,
