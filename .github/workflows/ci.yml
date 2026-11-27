@@ -35,6 +35,8 @@ jobs:
           pytest backend/tests -v
         env:
           PYTHONPATH: backend
+          DATABASE_URL: sqlite:///./data/jci_test.db
+          JCI_AUTH_REQUIRED: 'false'
 
   frontend-build:
     name: Frontend TypeScript & Vite Build

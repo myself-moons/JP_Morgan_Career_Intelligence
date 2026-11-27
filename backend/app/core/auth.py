@@ -150,6 +150,14 @@ def _extract_token(request: Request) -> Optional[str]:
     return None
 
 
+def is_admin_user(user: User) -> bool:
+    """Returns True for local dev workspace or any email listed in JCI_ADMIN_EMAILS."""
+    if getattr(user, "is_local_dev", 0):
+        return True
+    email = (getattr(user, "email", "") or "").strip().lower()
+    return bool(email and email in settings.ADMIN_EMAILS)
+
+
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     """
     Resolves authenticated user from HttpOnly JWT session cookie (or Bearer token).

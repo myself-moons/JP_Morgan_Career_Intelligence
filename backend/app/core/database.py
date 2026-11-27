@@ -52,7 +52,21 @@ def init_db():
                 _sqlite_add_column_if_missing(conn, "job_listings", "user_id", "INTEGER")
                 _sqlite_add_column_if_missing(conn, "resumes", "user_id", "INTEGER")
                 _sqlite_add_column_if_missing(conn, "resumes", "stored_filename", "VARCHAR(255)")
+                _sqlite_add_column_if_missing(conn, "resumes", "pdf_data", "BLOB")
+                _sqlite_add_column_if_missing(conn, "users", "email_alerts_enabled", "INTEGER NOT NULL DEFAULT 1")
                 _sqlite_add_column_if_missing(conn, "llm_evaluations", "user_id", "INTEGER")
+                conn.commit()
+            except Exception:
+                pass
+    elif engine.dialect.name == "postgresql":
+        with engine.connect() as conn:
+            try:
+                conn.exec_driver_sql(
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_alerts_enabled INTEGER NOT NULL DEFAULT 1"
+                )
+                conn.exec_driver_sql(
+                    "ALTER TABLE resumes ADD COLUMN IF NOT EXISTS pdf_data BYTEA"
+                )
                 conn.commit()
             except Exception:
                 pass

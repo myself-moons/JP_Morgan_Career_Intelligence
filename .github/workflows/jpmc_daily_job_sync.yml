@@ -1,8 +1,8 @@
-name: JPMC Daily Job Sync & Match Alerts
+name: JPMC Daily Job Sync & Multi-User Match Alerts
 
 on:
   schedule:
-    # Runs daily at 03:00 UTC (08:30 IST)
+    # Runs daily at 03:00 UTC (08:30 IST) — $0 cost on GitHub Actions
     - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
@@ -20,17 +20,14 @@ on:
         required: false
         default: false
       dry_run:
-        description: 'Dry run preview without modifying persistent database'
+        description: 'Dry run preview without modifying database or sending emails'
         type: boolean
         required: false
         default: false
 
-permissions:
-  contents: write
-
 jobs:
   jpmc-watcher:
-    name: Sync JPMC Jobs & Dispatch Alert
+    name: Sync JPMC Jobs & Dispatch Per-User Digests
     runs-on: ubuntu-latest
 
     steps:
@@ -48,7 +45,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Execute Autonomous JPMC Job Watcher
+      - name: Execute v3.0 Multi-User JPMC Job Watcher
         run: |
           FLAGS=""
           if [ "${{ github.event.inputs.force_email }}" = "true" ]; then
@@ -57,7 +54,7 @@ jobs:
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             FLAGS="$FLAGS --dry-run"
           fi
-          
+
           python scripts/jpmc_job_watcher.py \
             --limit "${{ github.event.inputs.limit || '25' }}" \
             --min-score "${{ github.event.inputs.min_score || '50' }}" \
@@ -65,22 +62,10 @@ jobs:
             $FLAGS
         env:
           PYTHONPATH: backend
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          APP_URL: ${{ vars.APP_URL || 'https://jci-app-60056461331.asia-southeast1.run.app' }}
           SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           SMTP_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD || secrets.GMAIL_APP_PASSWORD }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL || secrets.ALERT_RECIPIENT_EMAIL }}
-
-      - name: Commit updated job index & database (if modified and not dry run)
-        if: github.event.inputs.dry_run != 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          if ! git diff --staged --quiet; then
-            git commit -m "chore(sync): automated JPMC job index update [skip ci]"
-            git push
-          else
-            echo "No database changes to commit."
-          fi

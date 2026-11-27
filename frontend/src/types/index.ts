@@ -20,6 +20,8 @@ export interface AuthUser {
   display_name: string;
   avatar_url?: string | null;
   is_local_dev: number;
+  email_alerts_enabled?: number;
+  is_admin?: boolean;
 }
 
 export interface Job {

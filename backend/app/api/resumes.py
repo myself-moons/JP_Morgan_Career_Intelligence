@@ -2,7 +2,7 @@ import uuid
 from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -116,6 +116,7 @@ async def upload_resume(
         name=name.strip() or Path(orig_name).stem,
         pdf_filename=orig_name if ext == ".pdf" else None,
         stored_filename=safe_stored_name,
+        pdf_data=contents if ext == ".pdf" else None,
         raw_text=raw_text.strip(),
         is_active=1,
     )
@@ -176,17 +177,24 @@ def stream_resume_pdf(
         .filter(ResumeDocument.id == resume_id, ResumeDocument.user_id == current_user.id)
         .first()
     )
-    if not target or not target.stored_filename or not target.stored_filename.endswith(".pdf"):
+    if not target or not (target.pdf_filename or "").lower().endswith(".pdf"):
         raise HTTPException(status_code=404, detail="PDF file not found for this resume")
-    file_path = _user_upload_dir(current_user.id) / Path(target.stored_filename).name
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Stored PDF file not found on disk")
-    return FileResponse(
-        path=str(file_path),
-        media_type="application/pdf",
-        filename=target.pdf_filename or "resume.pdf",
-        headers={"Content-Disposition": f'inline; filename="{target.pdf_filename or "resume.pdf"}"'},
-    )
+    if target.stored_filename:
+        file_path = _user_upload_dir(current_user.id) / Path(target.stored_filename).name
+        if file_path.exists():
+            return FileResponse(
+                path=str(file_path),
+                media_type="application/pdf",
+                filename=target.pdf_filename or "resume.pdf",
+                headers={"Content-Disposition": f'inline; filename="{target.pdf_filename or "resume.pdf"}"'},
+            )
+    if target.pdf_data:
+        return Response(
+            content=target.pdf_data,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{target.pdf_filename or "resume.pdf"}"'},
+        )
+    raise HTTPException(status_code=404, detail="Stored PDF file not found")
 
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user resume")

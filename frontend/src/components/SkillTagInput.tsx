@@ -73,13 +73,13 @@ export const SkillTagInput: React.FC<SkillTagInputProps> = ({
           {selectedTags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
             >
               <span>{tag}</span>
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
-                className="text-blue-500 hover:text-blue-800"
+                className="text-blue-500 dark:text-blue-300 hover:text-blue-800 dark:hover:text-white"
                 aria-label={`Remove ${tag}`}
               >
                 <X className="w-3 h-3" />
@@ -106,14 +106,14 @@ export const SkillTagInput: React.FC<SkillTagInputProps> = ({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 text-xs sm:text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 text-xs sm:text-sm border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {query.trim() && (
           <button
             type="button"
             disabled={resolving}
             onClick={() => addResolvedTag(query)}
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-slate-800 text-white text-xs font-semibold shrink-0"
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-slate-800 dark:bg-blue-600 hover:bg-slate-700 dark:hover:bg-blue-500 text-white text-xs font-semibold shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{resolving ? '...' : 'Add'}</span>
@@ -122,7 +122,7 @@ export const SkillTagInput: React.FC<SkillTagInputProps> = ({
       </div>
 
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-30 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-56 overflow-y-auto divide-y divide-slate-100">
+        <div className="absolute z-30 left-0 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
           {suggestions.map((item) => (
             <button
               key={item.id}
@@ -131,17 +131,17 @@ export const SkillTagInput: React.FC<SkillTagInputProps> = ({
                 e.preventDefault();
                 handleSelectSuggestion(item);
               }}
-              className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center justify-between gap-2 text-xs"
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center justify-between gap-2 text-xs"
             >
               <div>
-                <span className="font-semibold text-slate-900">{item.canonical_name}</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">{item.canonical_name}</span>
                 {item.matched_alias && (
                   <span className="ml-1.5 text-[11px] text-slate-400">
                     (matched &ldquo;{item.matched_alias}&rdquo;)
                   </span>
                 )}
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
                 {item.job_count} jobs
               </span>
             </button>

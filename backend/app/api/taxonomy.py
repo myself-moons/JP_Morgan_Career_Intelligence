@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.core.auth import check_ai_rate_limit, get_current_user
+from app.core.auth import check_ai_rate_limit, get_current_user, is_admin_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import Skill, SkillAlias, JobSkill, JobListing, User
@@ -113,10 +113,10 @@ def create_skill(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Global taxonomy creation is restricted in multi-user mode. Use /resolve-or-create.",
+            detail="Global taxonomy creation is restricted to workspace admins. Use /resolve-or-create.",
         )
     seed_taxonomy_if_empty(db)
     norm_name = payload.canonical_name.strip()
@@ -163,10 +163,10 @@ def add_alias(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Global skill alias modification is restricted in multi-user mode.",
+            detail="Global skill alias modification is restricted to workspace admins.",
         )
     skill = db.query(Skill).filter(Skill.id == skill_id).first()
     if not skill:
@@ -261,7 +261,7 @@ def extract_job_skills(
     )
     if not job:
         raise HTTPException(status_code=404, detail="Job listing not found.")
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user) and job.user_id is None:
         raise HTTPException(status_code=403, detail="Shared baseline job skills cannot be modified.")
 
     saved = extract_and_save_job_skills(job, db)
@@ -290,8 +290,8 @@ def batch_extract(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
-        raise HTTPException(status_code=403, detail="Batch extraction is restricted in multi-user mode.")
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Batch extraction is restricted to workspace admins.")
     return batch_extract_all_jobs(db)
 
 
@@ -311,7 +311,7 @@ def update_job_skill(
     )
     if not job:
         raise HTTPException(status_code=404, detail="Job listing not found.")
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user) and job.user_id is None:
         raise HTTPException(status_code=403, detail="Shared baseline job skills cannot be modified.")
     record = (
         db.query(JobSkill)
@@ -367,7 +367,7 @@ def add_manual_job_skill(
     )
     if not job:
         raise HTTPException(status_code=404, detail="Job listing not found.")
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user) and job.user_id is None:
         raise HTTPException(status_code=403, detail="Shared baseline job skills cannot be modified.")
     skill = db.query(Skill).filter(Skill.id == payload.skill_id).first()
     if not skill:

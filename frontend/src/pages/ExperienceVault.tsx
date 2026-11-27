@@ -206,8 +206,8 @@ export const ExperienceVault: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900">Experience Vault</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Experience Vault</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Store full project &amp; academic work beyond a 1-page resume and compare against roles.
           </p>
         </div>
@@ -223,12 +223,12 @@ export const ExperienceVault: React.FC = () => {
       {/* 1. Experience Entries List */}
       <section className="space-y-3">
         {loading ? (
-          <div className="p-8 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200">
+          <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
             Loading Experience Vault...
           </div>
         ) : entries.length === 0 ? (
-          <div className="p-6 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
-            <p className="text-xs sm:text-sm text-slate-600">
+          <div className="p-6 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
               No work or academic history added yet.
             </p>
             <button
@@ -243,15 +243,15 @@ export const ExperienceVault: React.FC = () => {
           entries.map((entry) => (
             <div
               key={entry.id}
-              className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-2.5"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-2.5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-slate-900">{entry.title}</h3>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">{entry.title}</h3>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {entry.organization_or_project && <span>{entry.organization_or_project}</span>}
                     {entry.contribution_note && (
-                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
                         {entry.contribution_note}
                       </span>
                     )}
@@ -260,14 +260,14 @@ export const ExperienceVault: React.FC = () => {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => openModal(entry)}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg"
+                    className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg"
                     title="Edit"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteEntry(entry.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -275,7 +275,7 @@ export const ExperienceVault: React.FC = () => {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                 {entry.detailed_narrative}
               </p>
 
@@ -284,7 +284,7 @@ export const ExperienceVault: React.FC = () => {
                   {entry.skill_tags.map((tag) => (
                     <span
                       key={tag}
-                      className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium"
+                      className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-medium"
                     >
                       {tag}
                     </span>
@@ -297,19 +297,19 @@ export const ExperienceVault: React.FC = () => {
       </section>
 
       {/* 2. Mini-RAG Job Comparison */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Compare Against Target Roles</h3>
-            <p className="text-xs text-slate-500">
-              Uses Mini-RAG retrieval to match your detailed history and give plain-text Overleaf suggestions.
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Compare Against Target Roles</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Matches your detailed history against target jobs and suggests plain-text resume updates.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <select
               value={modelMode}
               onChange={(e) => setModelMode(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white"
+              className="text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
             >
               <option value="gemini-3.8-flash">gemini-3.8-flash</option>
               <option value="gemini-flash-latest">gemini-flash-latest</option>
@@ -327,7 +327,7 @@ export const ExperienceVault: React.FC = () => {
           </div>
         </div>
 
-        {/* Search-only Job Selector (suggests only while searching, lets user pick multiple before comparing) */}
+        {/* Search-only Job Selector */}
         <div className="space-y-2.5">
           {selectedJobIds.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -339,7 +339,7 @@ export const ExperienceVault: React.FC = () => {
                     key={jid}
                     type="button"
                     onClick={() => toggleJob(jid)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900 text-white text-[11px] font-semibold"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900 dark:bg-blue-600 text-white text-[11px] font-semibold"
                   >
                     <span className="truncate max-w-[220px]">
                       {job.external_job_id ? `${job.external_job_id}: ` : ''}
@@ -352,7 +352,7 @@ export const ExperienceVault: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedJobIds([])}
-                className="text-[11px] text-blue-600 font-semibold hover:underline ml-1"
+                className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold hover:underline ml-1"
               >
                 Clear
               </button>
@@ -369,7 +369,7 @@ export const ExperienceVault: React.FC = () => {
                 ? 'Maximum 3 roles selected — remove one to search another'
                 : `Search ${jobs.length} jobs by title or ID (${selectedJobIds.length}/3 selected)...`
             }
-            className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+            className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
           />
 
           {jobSearch.trim().length > 0 && (
@@ -395,8 +395,8 @@ export const ExperienceVault: React.FC = () => {
                         setJobSearch('');
                       }}
                       className={`px-2.5 py-1.5 rounded-lg text-xs border text-left transition ${active
-                        ? 'bg-slate-900 text-white border-slate-900 font-semibold'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                        ? 'bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 font-semibold'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                         }`}
                     >
                       {job.external_job_id ? `${job.external_job_id}: ` : ''}
@@ -409,7 +409,7 @@ export const ExperienceVault: React.FC = () => {
         </div>
 
         {compareError && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300">
             {compareError}
           </div>
         )}
@@ -429,19 +429,19 @@ export const ExperienceVault: React.FC = () => {
             : compareResult.resume_suggestions;
 
           return (
-            <div className="space-y-4 pt-3 border-t border-slate-100">
+            <div className="space-y-4 pt-3 border-t border-slate-100 dark:border-slate-800">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                  <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
                     {compareResult.model_used}
                   </span>
                   {compareResult.is_cached && (
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium">
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-medium">
                       Cached
                     </span>
                   )}
                   {compareResult.fallback_note && (
-                    <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+                    <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium">
                       {compareResult.fallback_note}
                     </span>
                   )}
@@ -449,7 +449,7 @@ export const ExperienceVault: React.FC = () => {
                 <button
                   onClick={() => runCompareAI(true)}
                   disabled={comparing}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Refresh AI</span>
@@ -468,7 +468,7 @@ export const ExperienceVault: React.FC = () => {
                         onClick={() => setActiveResultJobId(pj.job_id)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap border transition inline-flex items-center gap-1.5 ${isTabActive
                           ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                           }`}
                       >
                         <span>
@@ -480,8 +480,8 @@ export const ExperienceVault: React.FC = () => {
                             className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isTabActive
                                 ? 'bg-white/20 text-white'
                                 : pj.is_ai_score
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : 'bg-orange-50 text-orange-700'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300'
+                                  : 'bg-orange-50 dark:bg-orange-950/70 text-orange-700 dark:text-orange-300'
                               }`}
                           >
                             {pj.fit_score}%
@@ -497,44 +497,44 @@ export const ExperienceVault: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span
                     className={`font-bold px-2.5 py-1 rounded-lg border ${activeJobResult.is_ai_score
-                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                        : 'text-orange-700 bg-orange-50 border-orange-200'
+                        ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 border-emerald-200 dark:border-emerald-800'
+                        : 'text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/70 border-orange-200 dark:border-orange-800'
                       }`}
                   >
                     {activeJobResult.fit_score}% {activeJobResult.is_ai_score ? 'AI Score' : 'Quick Estimate'}
                   </span>
                   {activeJobResult.is_ai_score && (
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
                       Saved to your Home dashboard rankings
                     </span>
                   )}
                 </div>
               )}
 
-              <p className="text-xs sm:text-sm text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                 {displaySummary}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1.5">
-                  <h4 className="font-bold text-emerald-900">Covered by Your History</h4>
-                  <ul className="list-disc list-inside space-y-1 text-emerald-800">
+                <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-1.5">
+                  <h4 className="font-bold text-emerald-900 dark:text-emerald-200">Covered by Your History</h4>
+                  <ul className="list-disc list-inside space-y-1 text-emerald-800 dark:text-emerald-300">
                     {displayStrengths.map((s, i) => (
                       <li key={i}>{s}</li>
                     ))}
                   </ul>
                 </div>
-                <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 space-y-1.5">
-                  <h4 className="font-bold text-amber-900">Gaps</h4>
-                  <ul className="list-disc list-inside space-y-1 text-amber-800">
+                <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 space-y-1.5">
+                  <h4 className="font-bold text-amber-900 dark:text-amber-200">Gaps</h4>
+                  <ul className="list-disc list-inside space-y-1 text-amber-800 dark:text-amber-300">
                     {displayGaps.map((g, i) => (
                       <li key={i}>{g}</li>
                     ))}
                   </ul>
                 </div>
-                <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-1.5">
-                  <h4 className="font-bold text-blue-900">Resume Suggestions (For Overleaf)</h4>
-                  <ul className="list-disc list-inside space-y-1 text-blue-800">
+                <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 space-y-1.5">
+                  <h4 className="font-bold text-blue-900 dark:text-blue-200">Resume Suggestions</h4>
+                  <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-300">
                     {displaySuggestions.map((r, i) => (
                       <li key={i}>{r}</li>
                     ))}
@@ -546,19 +546,19 @@ export const ExperienceVault: React.FC = () => {
         })()}
       </section>
 
-      {/* 3. Simple Resume Upload (Fallback & Reference, Zero LaTeX) */}
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      {/* 3. Simple Resume Upload (Fallback & Reference) */}
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
         <button
           onClick={() => setShowResumes(!showResumes)}
-          className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-50 transition"
+          className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
         >
           <div className="flex items-center gap-2.5">
-            <FileText className="w-4 h-4 text-slate-600" />
+            <FileText className="w-4 h-4 text-slate-600 dark:text-slate-300" />
             <div>
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 Uploaded Resumes ({resumes.length})
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 PDF, DOCX, or plain text (used as fallback if Vault is empty)
               </p>
             </div>
@@ -567,18 +567,18 @@ export const ExperienceVault: React.FC = () => {
         </button>
 
         {showResumes && (
-          <div className="p-4 border-t border-slate-100 space-y-4">
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
             {resumes.length > 0 && (
               <div className="space-y-2">
                 {resumes.map((r) => (
                   <div
                     key={r.id}
-                    className="p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                    className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{r.name}</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{r.name}</span>
                       {r.is_active === 1 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-semibold">
                           <CheckCircle2 className="w-3 h-3" /> Active
                         </span>
                       )}
@@ -589,7 +589,7 @@ export const ExperienceVault: React.FC = () => {
                           href={getResumePdfUrl(r.id)}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                         >
                           <ExternalLink className="w-3 h-3" /> PDF
                         </a>
@@ -600,7 +600,7 @@ export const ExperienceVault: React.FC = () => {
                             await activateResume(r.id);
                             setResumes(await fetchResumes());
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-semibold"
+                          className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-semibold"
                         >
                           Set Active
                         </button>
@@ -610,7 +610,7 @@ export const ExperienceVault: React.FC = () => {
                           await deleteResume(r.id);
                           setResumes(await fetchResumes());
                         }}
-                        className="p-1 text-rose-500 hover:text-rose-700"
+                        className="p-1 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -620,19 +620,19 @@ export const ExperienceVault: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleUploadResume} className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+            <form onSubmit={handleUploadResume} className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <input
                   value={resumeName}
                   onChange={(e) => setResumeName(e.target.value)}
                   placeholder="Resume label (e.g. Data Science CV)"
-                  className="border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                  className="border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
                 <input
                   type="file"
                   accept=".pdf,.docx,.txt"
                   onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                  className="border border-slate-300 rounded-lg px-2 py-1.5 bg-white"
+                  className="border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
               <textarea
@@ -640,13 +640,13 @@ export const ExperienceVault: React.FC = () => {
                 value={resumePasteText}
                 onChange={(e) => setResumePasteText(e.target.value)}
                 placeholder="Or paste plain resume text here if not uploading a file..."
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
               />
-              {resumeErr && <p className="text-rose-600">{resumeErr}</p>}
+              {resumeErr && <p className="text-rose-600 dark:text-rose-400">{resumeErr}</p>}
               <button
                 type="submit"
                 disabled={uploadingResume}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-semibold"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 dark:bg-blue-600 hover:bg-slate-900 dark:hover:bg-blue-500 text-white font-semibold"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span>{uploadingResume ? 'Saving...' : 'Save Resume'}</span>
@@ -658,64 +658,64 @@ export const ExperienceVault: React.FC = () => {
 
       {/* Add/Edit Entry Modal */}
       {showEntryModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-bold text-slate-900">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                 {editingId ? 'Edit Experience Entry' : 'Add Experience Entry'}
               </h3>
-              <button onClick={() => setShowEntryModal(false)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setShowEntryModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSaveEntry} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Title &amp; Role / Project *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Title &amp; Role / Project *</label>
                 <input
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Backend Internship / Data Quality Project"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Organization / Context</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Organization / Context</label>
                   <input
                     value={org}
                     onChange={(e) => setOrg(e.target.value)}
                     placeholder="Company, University, or Personal"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                    className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">My Contribution (optional)</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">My Contribution (optional)</label>
                   <input
                     value={roleNote}
                     onChange={(e) => setRoleNote(e.target.value)}
                     placeholder="e.g. Built independently, Co-built with AI"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                    className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Detailed Narrative *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Detailed Narrative *</label>
                 <textarea
                   required
                   rows={5}
                   value={narrative}
                   onChange={(e) => setNarrative(e.target.value)}
                   placeholder="Describe the problem solved, tools used, metrics, edge cases, and outcomes in full detail..."
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Tags / Skills (autocomplete from JD skills)
                 </label>
                 <SkillTagInput selectedTags={tags} onChange={setTags} />
@@ -725,7 +725,7 @@ export const ExperienceVault: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowEntryModal(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-semibold"
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold"
                 >
                   Cancel
                 </button>

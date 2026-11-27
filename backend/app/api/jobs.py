@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, is_admin_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import Company, JobListing, User
@@ -330,7 +330,7 @@ def get_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job record with ID {job_id} not found.",
         )
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user) and job.user_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Shared baseline JPMorgan Chase postings are read-only.",
@@ -357,7 +357,7 @@ def update_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job record with ID {job_id} not found.",
         )
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user) and job.user_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Shared baseline JPMorgan Chase postings are read-only.",
@@ -411,7 +411,7 @@ def delete_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job record with ID {job_id} not found.",
         )
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev and job.user_id is None:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user) and job.user_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Shared baseline JPMorgan Chase postings are read-only.",
@@ -427,11 +427,11 @@ def seed_jobs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Seed the 11 JPMorgan Chase research jobs into SQLite database."""
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+    """Seed the 11 JPMorgan Chase research jobs into database."""
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Baseline seeding is restricted in multi-user mode.",
+            detail="Baseline seeding is restricted to workspace admins.",
         )
     from app.core.seed import seed_baseline_jobs
     count = seed_baseline_jobs(db)
@@ -445,14 +445,17 @@ def sync_jobs(
     current_user: User = Depends(get_current_user),
 ):
     """Pulls live job postings from Oracle Cloud CE site CX_1001 for Mumbai/Goregaon."""
-    if settings.AUTH_REQUIRED and not current_user.is_local_dev:
+    if settings.AUTH_REQUIRED and not is_admin_user(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Shared Oracle Cloud job sync is restricted to workspace admins in multi-user mode.",
+            detail="Shared Oracle Cloud job sync is restricted to workspace admins.",
         )
     limit = payload.limit if payload else 25
     dry_run = payload.dry_run if payload else False
     result = sync_jpmc_jobs(db, limit=limit, dry_run=dry_run)
+    if result.get("added", 0) > 0 and not dry_run:
+        from app.services.taxonomy_service import batch_extract_all_jobs
+        batch_extract_all_jobs(db)
     return SyncResponse(
         total_found=result["total_found"],
         added=result["added"],

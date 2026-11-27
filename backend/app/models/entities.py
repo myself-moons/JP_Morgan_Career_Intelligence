@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     Column,
     Integer,
+    LargeBinary,
     String,
     Text,
     DateTime,
@@ -25,6 +26,7 @@ class User(Base):
     display_name = Column(String(255), nullable=False)
     avatar_url = Column(Text, nullable=True)
     is_local_dev = Column(Integer, default=0, nullable=False)
+    email_alerts_enabled = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime, default=utcnow, nullable=False)
     last_login_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -87,6 +89,7 @@ class ResumeDocument(Base):
     name = Column(String(255), nullable=False, index=True)
     pdf_filename = Column(String(255), nullable=True)
     stored_filename = Column(String(255), nullable=True)
+    pdf_data = Column(LargeBinary, nullable=True)
     latex_filename = Column(String(255), nullable=True)
     raw_text = Column(Text, nullable=True)
     latex_source = Column(Text, nullable=True)

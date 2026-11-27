@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-JPMorgan Chase Career Intelligence - Automated Job Watcher & Alert Engine
+JPMorgan Career Intelligence (JCI v3.0) - Automated Multi-User Job Watcher
 
-Designed to run in GitHub Actions on a schedule (e.g. daily cron) or on-demand:
+Designed to run in GitHub Actions on a daily cron ($0 cost):
 1. Queries JPMC's public Oracle Recruiting Cloud CE API for Mumbai/Goregaon roles.
-2. Ingests and persists newly discovered jobs in SQLite.
-3. Evaluates roles against the candidate's active resume.
-4. Generates an executive briefing (HTML + Markdown).
-5. Dispatches an email notification via SMTP (Gmail, SendGrid, etc.) if configured.
-6. Writes GitHub Actions Step Summary for instant dashboard visibility.
+2. Syncs newly discovered jobs into PostgreSQL (shared baseline) and extracts canonical skills.
+3. For every registered user with email alerts enabled, computes deterministic match scores
+   against their private Experience Vault (or active Resume fallback) — zero LLM API cost.
+4. Sends each matched user a personalized HTML digest email via SMTP (e.g. free Gmail SMTP).
+5. Writes an anonymized aggregate briefing to GitHub Actions Step Summary.
 """
 
 import argparse
@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Ensure repository root and backend are on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -28,131 +28,116 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.database import SessionLocal, init_db
-from app.models.entities import JobListing, ResumeDocument
 from app.core.seed import seed_baseline_jobs
+from app.models.entities import ExperienceEntry, JobListing, ResumeDocument, User
+from app.models.schemas import TopJobMatch
 from app.services.job_sync import sync_jpmc_jobs
-from app.services.llm_matcher import explainable_resume_match
+from app.services.llm_matcher import rank_top_jobs_for_resume
+from app.services.taxonomy_service import batch_extract_all_jobs, seed_taxonomy_if_empty
+
+
+def _build_user_profile_text(db, user: User) -> Tuple[str, str]:
+    """Builds candidate text using v3 priority: Experience Vault -> Active Resume."""
+    entries = (
+        db.query(ExperienceEntry)
+        .filter(ExperienceEntry.user_id == user.id)
+        .order_by(ExperienceEntry.updated_at.desc())
+        .all()
+    )
+    if entries:
+        parts = []
+        for e in entries:
+            parts.append(f"{e.title} ({e.organization_or_project or ''})\n{e.detailed_narrative}")
+        return "\n\n".join(parts), "Experience Vault"
+
+    resumes = (
+        db.query(ResumeDocument)
+        .filter(ResumeDocument.user_id == user.id)
+        .order_by(ResumeDocument.is_active.desc(), ResumeDocument.id.desc())
+        .all()
+    )
+    if resumes:
+        active = next((r for r in resumes if r.is_active == 1), resumes[0])
+        if active.raw_text:
+            return active.raw_text, f"Resume ({active.name})"
+
+    return "", "None"
 
 
 def build_markdown_summary(
-    active_resume: ResumeDocument,
     sync_stats: Dict[str, Any],
-    top_matches: List[Dict[str, Any]],
+    users_evaluated: int,
+    emails_sent: int,
     timestamp: str,
 ) -> str:
-    """Builds a GitHub Actions Markdown Step Summary."""
+    """Builds an anonymized GitHub Actions Markdown Step Summary (no PII leaked)."""
     lines = [
-        "# 🏛️ JPMorgan Chase Career Intelligence — Daily Sync & Match Briefing",
-        f"**Run Timestamp:** `{timestamp} UTC` | **Active Resume:** `{active_resume.name}`",
+        "# JPMorgan Career Intelligence (v3.0) — Daily Sync Briefing",
+        f"**Run Timestamp:** `{timestamp} UTC`",
         "",
-        "### 📊 Ingestion & Sync Statistics",
-        f"- **Total Remote Postings Evaluated (Mumbai/Goregaon Area):** `{sync_stats.get('total_found', 0)}`",
+        "### Sync Statistics",
+        f"- **Total Remote Postings Evaluated (Mumbai/Goregaon):** `{sync_stats.get('total_found', 0)}`",
         f"- **New Postings Discovered:** `{sync_stats.get('added', 0)}`",
         f"- **Updated Postings:** `{sync_stats.get('updated', 0)}`",
         f"- **Unchanged Postings:** `{sync_stats.get('unchanged', 0)}`",
         f"- **Postings Flagged Stale:** `{sync_stats.get('stale', 0)}`",
         "",
-        "### 🎯 Top Matching Roles for Active Profile",
+        "### Multi-User Alert Dispatch",
+        f"- **Registered Users Evaluated:** `{users_evaluated}`",
+        f"- **Personalized Digests Sent:** `{emails_sent}`",
     ]
-
-    if not top_matches:
-        lines.append("*No roles exceeded the minimum fit score threshold in this sync run.*")
-    else:
-        for idx, match in enumerate(top_matches, start=1):
-            job = match["job"]
-            eval_res = match["evaluation"]
-            score = eval_res.overall_score
-            verdict = eval_res.readiness_verdict
-            req_id = job.external_job_id or f"ID-{job.id}"
-            url = job.source_url or f"https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/{job.source_job_id}"
-
-            badge = "🟢 Strong Fit" if score >= 80 else "🔵 Competitive Fit" if score >= 60 else "🟡 Development Candidate"
-
-            lines.extend([
-                f"#### {idx}. [{job.title}]({url})",
-                f"- **Requisition ID:** `{req_id}` | **Role Family:** {job.role_family.split(':')[0]}",
-                f"- **Location:** {job.location} | **Posted / Captured Date:** `{job.capture_date or 'Recent'}`",
-                f"- **Match Fit Score:** **`{score}%`** ({badge}) | **Verdict:** `{verdict}`",
-                f"- **AI Reasoning:** {eval_res.summary_reasoning}",
-                f"- **Verified Competencies ({len(eval_res.verified_matched_skills)}):** " + (", ".join(eval_res.verified_matched_skills[:8]) if eval_res.verified_matched_skills else "None identified"),
-                f"- **Critical Gaps ({len(eval_res.critical_missing_skills)}):** " + (", ".join(eval_res.critical_missing_skills[:6]) if eval_res.critical_missing_skills else "None identified"),
-                f"- **[Direct Apply Link on JPMC Careers]({url})**",
-                "",
-            ])
-
     return "\n".join(lines)
 
 
 def build_html_email(
-    active_resume: ResumeDocument,
+    display_name: str,
+    source_label: str,
     sync_stats: Dict[str, Any],
-    top_matches: List[Dict[str, Any]],
+    top_matches: List[TopJobMatch],
     timestamp: str,
+    app_url: str,
 ) -> str:
-    """Builds a clean, executive HTML email with JPMorgan Chase styling."""
+    """Builds a clean, mobile-friendly HTML email for an individual user."""
     match_cards = ""
-    for idx, match in enumerate(top_matches, start=1):
-        job = match["job"]
-        eval_res = match["evaluation"]
-        score = eval_res.overall_score
-        verdict = eval_res.readiness_verdict
-        url = job.source_url or f"https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/{job.source_job_id}"
-        score_color = "#10b981" if score >= 80 else "#0ea5e9" if score >= 60 else "#f59e0b"
+    for match in top_matches:
+        score = match.score
+        url = match.source_url or app_url
+        score_color = "#10b981" if score >= 80 else "#3b82f6" if score >= 60 else "#f59e0b"
 
         matched_skills_html = "".join(
-            f'<span style="display:inline-block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin:2px;">{s}</span>'
-            for s in eval_res.verified_matched_skills[:6]
-        )
-        gaps_html = "".join(
-            f'<span style="display:inline-block;background:#fffbeb;color:#92400e;border:1px solid #fde68a;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;margin:2px;">{g}</span>'
-            for g in eval_res.critical_missing_skills[:5]
+            f'<span style="display:inline-block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;margin:2px;">{s}</span>'
+            for s in match.matched_skills[:6]
         )
 
         match_cards += f"""
-        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                 <div>
                     <span style="font-family:monospace;background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:bold;">
-                        {job.external_job_id or 'JPMC-REQ'}
+                        {match.external_job_id or 'JPMC-REQ'}
                     </span>
-                    <h3 style="margin:6px 0 2px 0;font-size:16px;color:#0f172a;font-weight:700;">
-                        {job.title}
+                    <h3 style="margin:6px 0 4px 0;font-size:15px;color:#0f172a;font-weight:700;">
+                        {match.title}
                     </h3>
                     <p style="margin:0;font-size:12px;color:#64748b;">
-                        {job.role_family.split(':')[0]} &bull; {job.location} &bull; <strong>Posted:</strong> {job.capture_date or 'Recent'}
+                        {match.role_family.split(':')[0]} &bull; {match.capture_date or 'Recent'}
                     </p>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-size:24px;font-weight:900;color:{score_color};line-height:1;">
+                <div style="text-align:right;white-space:nowrap;">
+                    <div style="font-size:22px;font-weight:900;color:{score_color};line-height:1;">
                         {score}%
                     </div>
-                    <span style="font-size:11px;font-weight:bold;color:#475569;">
-                        {verdict}
+                    <span style="font-size:11px;font-weight:600;color:#475569;">
+                        {match.readiness_verdict}
                     </span>
                 </div>
             </div>
-
-            <p style="font-size:13px;color:#334155;line-height:1.5;margin:10px 0;background:#f8fafc;padding:10px 12px;border-radius:6px;border-left:3px solid {score_color};">
-                {eval_res.summary_reasoning}
-            </p>
-
-            <div style="margin-top:12px;">
-                <div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;margin-bottom:4px;">
-                    Verified Competencies
-                </div>
-                <div>{matched_skills_html if matched_skills_html else '<span style="font-size:12px;color:#94a3b8;">None identified</span>'}</div>
-            </div>
-
             <div style="margin-top:10px;">
-                <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;margin-bottom:4px;">
-                    Critical Gaps to Prepare
-                </div>
-                <div>{gaps_html if gaps_html else '<span style="font-size:12px;color:#94a3b8;">None identified</span>'}</div>
+                {matched_skills_html if matched_skills_html else '<span style="font-size:12px;color:#94a3b8;">Matches your profile keywords</span>'}
             </div>
-
-            <div style="margin-top:16px;padding-top:12px;border-top:1px solid #f1f5f9;text-align:right;">
-                <a href="{url}" style="display:inline-block;background:#003366;color:#ffffff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:700;">
-                    View &amp; Apply on JPMC Careers &rarr;
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f1f5f9;text-align:right;">
+                <a href="{url}" style="display:inline-block;background:#005ea6;color:#ffffff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:700;">
+                    View Role &rarr;
                 </a>
             </div>
         </div>
@@ -162,41 +147,34 @@ def build_html_email(
 <html>
 <head>
     <meta charset="utf-8">
-    <title>JPMorgan Chase Career Intelligence Briefing</title>
+    <title>Career Intelligence Daily Match Briefing</title>
 </head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#f8fafc;margin:0;padding:24px;color:#0f172a;">
-    <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
-        <!-- Header -->
-        <div style="background:#003366;background:linear-gradient(135deg, #001f3f 0%, #003366 100%);padding:28px 24px;color:#ffffff;">
-            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.8;font-weight:700;">
-                Autonomous Career Agent
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#0f172a;margin:0;padding:16px;color:#0f172a;">
+    <div style="max-width:620px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#0f172a 0%,#005ea6 100%);padding:24px;color:#ffffff;">
+            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;opacity:0.85;font-weight:700;">
+                Career Intelligence v3.0
             </div>
-            <h1 style="margin:4px 0 8px 0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">
-                JPMorgan Chase Career Intelligence
+            <h1 style="margin:6px 0 4px 0;font-size:20px;font-weight:800;">
+                Hi {display_name}, here are your top role matches
             </h1>
-            <p style="margin:0;font-size:13px;opacity:0.9;">
-                Daily Requisition Sync &amp; Profile Alignment Briefing &bull; {timestamp} UTC
+            <p style="margin:0;font-size:12px;opacity:0.9;">
+                {sync_stats.get('added', 0)} new postings discovered &bull; Ranked from {source_label} &bull; {timestamp} UTC
             </p>
         </div>
 
-        <!-- Metric Bar -->
-        <div style="background:#f1f5f9;padding:14px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:12px;color:#475569;">
-            <div><strong>Active Resume:</strong> {active_resume.name}</div>
-            <div><strong>New Postings:</strong> {sync_stats.get('added', 0)}</div>
-            <div><strong>Total Ingested:</strong> {sync_stats.get('total_found', 0)}</div>
+        <div style="padding:20px;">
+            {match_cards}
+            <div style="text-align:center;margin-top:16px;">
+                <a href="{app_url}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;">
+                    Open Career Intelligence Workspace
+                </a>
+            </div>
         </div>
 
-        <!-- Content Area -->
-        <div style="padding:24px;">
-            <h2 style="font-size:16px;font-weight:700;color:#0f172a;margin-top:0;margin-bottom:16px;">
-                Top Matched Positions ({len(top_matches)})
-            </h2>
-            {match_cards if top_matches else '<p style="color:#64748b;font-size:14px;">No positions exceeded the alignment threshold in this run.</p>'}
-        </div>
-
-        <!-- Footer -->
-        <div style="background:#f8fafc;padding:16px 24px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;">
-            Generated automatically by JPMorgan Career Intelligence (JCI) via GitHub Actions &bull; Local-first &bull; 0 Cloud Cost
+        <div style="background:#f8fafc;padding:14px 20px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#64748b;">
+            Sent by Career Intelligence &bull; Zero-cost automated match digest.<br>
+            You can turn off daily alerts anytime from the bell icon in the app header.
         </div>
     </div>
 </body>
@@ -212,136 +190,158 @@ def send_email_alert(
     smtp_user: str,
     smtp_pass: str,
 ):
-    """Sends an email notification via standard SMTP."""
+    """Sends an HTML email notification via SMTP."""
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"JCI Career Intelligence <{smtp_user}>"
+    msg["From"] = f"Career Intelligence <{smtp_user}>"
     msg["To"] = recipient
+    msg.attach(MIMEText(html_content, "html"))
 
-    part = MIMEText(html_content, "html")
-    msg.attach(part)
-
-    print(f"Connecting to SMTP server {smtp_host}:{smtp_port}...")
     with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
         server.starttls()
         server.login(smtp_user, smtp_pass)
         server.sendmail(smtp_user, [recipient], msg.as_string())
-    print(f"Email successfully delivered to {recipient}!")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="JCI Daily Job Watcher & Alert Engine")
+    parser = argparse.ArgumentParser(description="JCI v3.0 Daily Job Watcher & Multi-User Alert Engine")
     parser.add_argument("--limit", type=int, default=25, help="Max jobs to query from Oracle Cloud")
     parser.add_argument("--min-score", type=int, default=50, help="Min score to include in alert (0-100)")
-    parser.add_argument("--dry-run", action="store_true", help="Sync without persisting changes")
-    parser.add_argument("--force-email", action="store_true", help="Send email even if no new jobs")
+    parser.add_argument("--dry-run", action="store_true", help="Sync without persisting changes or emailing")
+    parser.add_argument("--force-email", action="store_true", help="Send email even if no new jobs were added")
     parser.add_argument("--output-summary", type=str, default="", help="Path to write GitHub Step Summary markdown")
     args = parser.parse_args()
 
     print("=" * 60)
-    print("JPMorgan Career Intelligence - Daily Job Watcher")
+    print("JPMorgan Career Intelligence v3.0 - Multi-User Job Watcher")
     print("=" * 60)
 
-    # 1. Initialize Database & Seed Baseline if fresh
     init_db()
     db = SessionLocal()
 
     try:
-        # Fetch active resume stored in database
-        resumes = (
-            db.query(ResumeDocument)
-            .order_by(ResumeDocument.is_active.desc(), ResumeDocument.id.desc())
+        if db.query(JobListing).count() == 0:
+            seed_baseline_jobs(db)
+        seed_taxonomy_if_empty(db)
+
+        print(f"Synchronizing live JPMC jobs (limit={args.limit}, dry_run={args.dry_run})...")
+        sync_stats = sync_jpmc_jobs(db, limit=args.limit, dry_run=args.dry_run)
+        print(
+            f"Sync Results: Added={sync_stats.get('added')}, Updated={sync_stats.get('updated')}, "
+            f"Unchanged={sync_stats.get('unchanged')}, Stale={sync_stats.get('stale')}"
+        )
+
+        if sync_stats.get("added", 0) > 0 and not args.dry_run:
+            batch_extract_all_jobs(db)
+
+        # Evaluate active/discovered shared jobs
+        jobs_to_eval = (
+            db.query(JobListing)
+            .filter(
+                JobListing.user_id.is_(None),
+                JobListing.status.in_(["Discovered", "Available"]),
+            )
             .all()
         )
-        if not resumes:
-            print("No uploaded resumes found in database; skipping resume evaluation.")
-            return
 
-        active_resume = next((r for r in resumes if r.is_active == 1), resumes[0])
-        print(f"Active Resume: {active_resume.name} (ID: {active_resume.id})")
-
-        # 2. Synchronize from Oracle Cloud CE endpoint
-        print(f"Synchronizing latest JPMC jobs from Oracle Cloud (limit={args.limit}, dry_run={args.dry_run})...")
-        sync_stats = sync_jpmc_jobs(db, limit=args.limit, dry_run=args.dry_run)
-        print(f"Sync Results: Added: {sync_stats.get('added')}, Updated: {sync_stats.get('updated')}, Unchanged: {sync_stats.get('unchanged')}, Stale: {sync_stats.get('stale')}")
-
-        # 3. Fetch jobs for evaluation
-        # We consider newly added jobs, plus all status="Discovered" or "Available"
-        jobs_to_eval: List[JobListing] = []
-        if sync_stats.get("jobs"):
-            jobs_to_eval = sync_stats["jobs"]
-        else:
-            jobs_to_eval = db.query(JobListing).filter(JobListing.status.in_(["Discovered", "Available"])).all()
-
-        resume_text = active_resume.raw_text or ""
-
-        # 4. Evaluate each role against active resume
-        print(f"Evaluating {len(jobs_to_eval)} jobs against active resume profile...")
-        scored_matches: List[Dict[str, Any]] = []
-
-        for job in jobs_to_eval:
-            try:
-                evaluation = explainable_resume_match(resume_text, job)
-                if evaluation.overall_score >= args.min_score:
-                    scored_matches.append({
-                        "job": job,
-                        "evaluation": evaluation,
-                    })
-            except Exception as e:
-                print(f"Warning: Failed to evaluate job {job.title}: {e}")
-
-        # Sort descending by overall match score
-        scored_matches.sort(key=lambda m: m["evaluation"].overall_score, reverse=True)
-        top_matches = scored_matches[:5]
-        print(f"Identified {len(top_matches)} high-alignment roles (score >= {args.min_score}%).")
-
-        # 5. Format Summaries
-        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
-        md_summary = build_markdown_summary(active_resume, sync_stats, top_matches, now_str)
-        html_email = build_html_email(active_resume, sync_stats, top_matches, now_str)
-
-        # Write GitHub Actions Step Summary if requested
-        summary_path = args.output_summary or os.getenv("GITHUB_STEP_SUMMARY", "")
-        if summary_path:
-            try:
-                with open(summary_path, "a", encoding="utf-8") as f:
-                    f.write("\n" + md_summary + "\n")
-                print(f"Step summary successfully appended to {summary_path}")
-            except Exception as e:
-                print(f"Note: Could not write step summary to {summary_path}: {e}")
-
-        # 6. Dispatch Email Notification if configured
+        app_url = os.getenv("APP_URL", "https://jci-app-60056461331.asia-southeast1.run.app").strip()
         smtp_user = os.getenv("SMTP_USER") or os.getenv("SMTP_USERNAME") or os.getenv("GMAIL_USER")
         smtp_pass = os.getenv("SMTP_PASSWORD") or os.getenv("GMAIL_APP_PASSWORD") or os.getenv("EMAIL_PASSWORD")
         smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        recipient = os.getenv("ALERT_EMAIL") or os.getenv("ALERT_RECIPIENT_EMAIL") or smtp_user
+        fallback_recipient = os.getenv("ALERT_EMAIL") or os.getenv("ALERT_RECIPIENT_EMAIL")
 
-        should_email = args.force_email or (sync_stats.get("added", 0) > 0 and len(top_matches) > 0)
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
 
-        if smtp_user and smtp_pass and recipient:
-            if should_email or args.force_email:
-                subject = f"🏛️ JPMC Career Intelligence: {len(top_matches)} Target Roles Matched ({now_str} UTC)"
-                print(f"Sending email notification to {recipient}...")
-                try:
-                    send_email_alert(
-                        subject=subject,
-                        html_content=html_email,
-                        recipient=recipient,
-                        smtp_host=smtp_host,
-                        smtp_port=smtp_port,
-                        smtp_user=smtp_user,
-                        smtp_pass=smtp_pass,
+        # Multi-user targets: all registered Google users who kept email alerts enabled
+        registered_users = (
+            db.query(User)
+            .filter(User.is_local_dev == 0, User.email_alerts_enabled == 1)
+            .all()
+        )
+
+        users_evaluated = 0
+        emails_sent = 0
+        should_notify = (not args.dry_run) and (args.force_email or sync_stats.get("added", 0) > 0)
+
+        if registered_users:
+            for user in registered_users:
+                profile_text, source_label = _build_user_profile_text(db, user)
+                if not profile_text.strip():
+                    continue
+                users_evaluated += 1
+                matches = rank_top_jobs_for_resume(profile_text, jobs_to_eval, top_n=5)
+                qualified = [m for m in matches if m.score >= args.min_score]
+                if not qualified:
+                    continue
+
+                if should_notify and smtp_user and smtp_pass and user.email:
+                    subject = f"Career Intelligence: {len(qualified)} Top Role Match(es) ({now_str} UTC)"
+                    html_email = build_html_email(
+                        display_name=user.display_name,
+                        source_label=source_label,
+                        sync_stats=sync_stats,
+                        top_matches=qualified,
+                        timestamp=now_str,
+                        app_url=app_url,
                     )
-                except Exception as e:
-                    print(f"Email delivery error: {e}")
-            else:
-                print("No new jobs discovered and force-email not specified; skipping email delivery.")
-        else:
-            print("Note: SMTP credentials not set in environment (SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL). Email delivery skipped.")
+                    try:
+                        send_email_alert(
+                            subject=subject,
+                            html_content=html_email,
+                            recipient=user.email,
+                            smtp_host=smtp_host,
+                            smtp_port=smtp_port,
+                            smtp_user=smtp_user,
+                            smtp_pass=smtp_pass,
+                        )
+                        emails_sent += 1
+                    except Exception as exc:
+                        print(f"Email delivery error for user #{user.id}: {exc}")
+        elif fallback_recipient:
+            # Local single-user fallback if no Google users exist yet
+            local_resume = (
+                db.query(ResumeDocument)
+                .order_by(ResumeDocument.is_active.desc(), ResumeDocument.id.desc())
+                .first()
+            )
+            if local_resume and local_resume.raw_text:
+                users_evaluated = 1
+                matches = rank_top_jobs_for_resume(local_resume.raw_text, jobs_to_eval, top_n=5)
+                qualified = [m for m in matches if m.score >= args.min_score]
+                if qualified and should_notify and smtp_user and smtp_pass:
+                    html_email = build_html_email(
+                        display_name="Workspace User",
+                        source_label=f"Resume ({local_resume.name})",
+                        sync_stats=sync_stats,
+                        top_matches=qualified,
+                        timestamp=now_str,
+                        app_url=app_url,
+                    )
+                    try:
+                        send_email_alert(
+                            subject=f"Career Intelligence: {len(qualified)} Top Role Match(es)",
+                            html_content=html_email,
+                            recipient=fallback_recipient,
+                            smtp_host=smtp_host,
+                            smtp_port=smtp_port,
+                            smtp_user=smtp_user,
+                            smtp_pass=smtp_pass,
+                        )
+                        emails_sent = 1
+                    except Exception as exc:
+                        print(f"Fallback email error: {exc}")
 
-        print("Sync and evaluation run completed successfully!")
+        print(f"Evaluated {users_evaluated} user(s); dispatched {emails_sent} digest email(s).")
 
+        summary_path = args.output_summary or os.getenv("GITHUB_STEP_SUMMARY", "")
+        if summary_path:
+            md_summary = build_markdown_summary(sync_stats, users_evaluated, emails_sent, now_str)
+            try:
+                with open(summary_path, "a", encoding="utf-8") as f:
+                    f.write("\n" + md_summary + "\n")
+            except Exception as exc:
+                print(f"Note: could not write step summary: {exc}")
     finally:
         db.close()
 

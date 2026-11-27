@@ -317,6 +317,12 @@ class UserOut(BaseModel):
     display_name: str
     avatar_url: Optional[str] = None
     is_local_dev: int = 0
+    email_alerts_enabled: int = 1
+    is_admin: bool = False
+
+
+class UserAlertsUpdate(BaseModel):
+    email_alerts_enabled: bool
 
 
 # --- v3.0: Global Skill Autocomplete & Deduplication ---

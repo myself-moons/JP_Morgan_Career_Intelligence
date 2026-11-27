@@ -67,6 +67,14 @@ export async function logoutUser(): Promise<void> {
   await apiFetch(`${API_BASE}/auth/logout`, { method: 'POST' });
 }
 
+export async function updateEmailAlerts(enabled: boolean): Promise<AuthUser> {
+  return apiFetch<AuthUser>(`${API_BASE}/auth/alerts`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email_alerts_enabled: enabled }),
+  });
+}
+
 export async function checkHealth(): Promise<HealthStatus> {
   return apiFetch<HealthStatus>(`${API_BASE}/health`);
 }

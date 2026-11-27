@@ -463,6 +463,32 @@ def test_security_lockdown_privilege_boundaries_and_rate_limiting():
             exp_resp = client.get("/api/exports/jobs?format=csv")
             assert exp_resp.status_code == 200
 
+            # Admin allowlist grants sync access; non-admin remains blocked (403)
+            assert client.post("/api/jobs/sync", json={"limit": 5, "dry_run": True}).status_code == 403
+            with patch.object(settings, "ADMIN_EMAILS", {"sec_audit@example.com"}), patch(
+                "app.api.jobs.sync_jpmc_jobs",
+                return_value={
+                    "total_found": 0,
+                    "added": 0,
+                    "updated": 0,
+                    "unchanged": 0,
+                    "stale": 0,
+                    "jobs": [],
+                    "message": "Dry run ok",
+                },
+            ):
+                admin_sync = client.post("/api/jobs/sync", json={"limit": 5, "dry_run": True})
+                assert admin_sync.status_code == 200
+
+            # User can toggle daily email alerts on/off
+            off_resp = client.put("/api/auth/alerts", json={"email_alerts_enabled": False})
+            assert off_resp.status_code == 200
+            assert off_resp.json()["email_alerts_enabled"] == 0
+            on_resp = client.put("/api/auth/alerts", json={"email_alerts_enabled": True})
+            assert on_resp.status_code == 200
+            assert on_resp.json()["email_alerts_enabled"] == 1
+            assert on_resp.json()["is_admin"] is False
+
             # 3. DB-backed AI rate limit survives memory clear
             db.query(AIUsageLog).filter(AIUsageLog.user_id == u_sec.id).delete()
             db.commit()

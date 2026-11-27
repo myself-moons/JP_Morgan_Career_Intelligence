@@ -36,7 +36,7 @@ import {
   syncJpmcJobs,
   getExportJobsUrl,
 } from '../services/api';
-import { Job, JobListResponse, SyncResult } from '../types';
+import { AuthUser, Job, JobListResponse, SyncResult } from '../types';
 import { formatDateDDMMYYYY } from '../utils/date';
 
 const ROLE_FAMILIES = [
@@ -45,7 +45,12 @@ const ROLE_FAMILIES = [
   'Family C: Finance, Credit and Operations',
 ];
 
-export const JobLibrary: React.FC = () => {
+interface JobLibraryProps {
+  user?: AuthUser | null;
+}
+
+export const JobLibrary: React.FC<JobLibraryProps> = ({ user }) => {
+  const canAdminSync = !user || Boolean(user.is_admin) || user.is_local_dev === 1;
   const [data, setData] = useState<JobListResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -333,16 +338,16 @@ export const JobLibrary: React.FC = () => {
   };
 
   const getFamilyBadgeColor = (family: string) => {
-    if (family.includes('Family A')) return 'bg-blue-50 text-blue-700 border-blue-200';
-    if (family.includes('Family B')) return 'bg-purple-50 text-purple-700 border-purple-200';
-    if (family.includes('Family C')) return 'bg-amber-50 text-amber-800 border-amber-200';
-    return 'bg-slate-100 text-slate-700 border-slate-200';
+    if (family.includes('Family A')) return 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+    if (family.includes('Family B')) return 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+    if (family.includes('Family C')) return 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+    return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
   };
 
   const getStatusBadge = (status: string) => {
     if (status.toLowerCase() === 'available') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
           Available
         </span>
@@ -350,7 +355,7 @@ export const JobLibrary: React.FC = () => {
     }
     if (status.toLowerCase() === 'discovered') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-1.5"></span>
           Discovered
         </span>
@@ -358,7 +363,7 @@ export const JobLibrary: React.FC = () => {
     }
     if (status.toLowerCase() === 'stale') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
           Stale
         </span>
@@ -366,14 +371,14 @@ export const JobLibrary: React.FC = () => {
     }
     if (status.toLowerCase() === 'jd unavailable') {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
           JD unavailable
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
         {status}
       </span>
     );
@@ -383,7 +388,7 @@ export const JobLibrary: React.FC = () => {
   const renderBulletList = (text: string | null | undefined, fallbackMsg: string) => {
     if (!text || !text.trim()) {
       return (
-        <div className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-lg border border-slate-200">
+        <div className="text-xs text-slate-400 italic p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
           {fallbackMsg}
         </div>
       );
@@ -398,7 +403,7 @@ export const JobLibrary: React.FC = () => {
         {lines.map((line, idx) => {
           const cleanLine = line.replace(/^[-*•\d.]+\s*/, '');
           return (
-            <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-700 leading-relaxed">
+            <li key={idx} className="flex items-start space-x-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
               <span>{cleanLine}</span>
             </li>
@@ -413,9 +418,9 @@ export const JobLibrary: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Job Description Library</h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Local repository of ingested JPMorgan Chase postings, automated section extraction, and immutable reference text.
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Job Description Library</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Repository of ingested postings, automated section extraction, and original reference text.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -426,7 +431,7 @@ export const JobLibrary: React.FC = () => {
               status: selectedStatus,
               search: search.trim() || undefined,
             })}
-            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition shadow-sm"
+            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition shadow-sm"
             title="Export filtered jobs to CSV"
           >
             <Download className="w-3.5 h-3.5" />
@@ -439,28 +444,32 @@ export const JobLibrary: React.FC = () => {
               status: selectedStatus,
               search: search.trim() || undefined,
             })}
-            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-medium transition shadow-sm"
+            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-medium transition shadow-sm"
             title="Export filtered jobs to Excel"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Excel</span>
           </a>
-          <button
-            onClick={() => setIsSyncModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium transition shadow-sm"
-            title="Sync live job listings directly from JPMorgan Chase careers API"
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>Fetch Live JPMC Jobs</span>
-          </button>
-          <button
-            onClick={handleReSeed}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition shadow-sm"
-            title="Re-populate the 11 baseline JPMorgan Chase jobs"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset to Sample (11 Jobs)</span>
-          </button>
+          {canAdminSync && (
+            <>
+              <button
+                onClick={() => setIsSyncModalOpen(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-medium transition shadow-sm"
+                title="Sync live job listings directly from JPMorgan Chase careers API"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Fetch Live JPMC Jobs</span>
+              </button>
+              <button
+                onClick={handleReSeed}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition shadow-sm"
+                title="Re-populate the baseline JPMorgan Chase jobs"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Baseline</span>
+              </button>
+            </>
+          )}
           <button
             onClick={openAddModal}
             className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition shadow-sm"
@@ -472,7 +481,7 @@ export const JobLibrary: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           <div className="sm:col-span-6 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -481,7 +490,7 @@ export const JobLibrary: React.FC = () => {
               placeholder="Search by job title, requisition code, or keywords..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -489,7 +498,7 @@ export const JobLibrary: React.FC = () => {
             <select
               value={selectedFamily}
               onChange={(e) => setSelectedFamily(e.target.value)}
-              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
             >
               <option value="All">All Role Families</option>
               {ROLE_FAMILIES.map((fam) => (
@@ -504,7 +513,7 @@ export const JobLibrary: React.FC = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full py-2 px-3 text-xs rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
             >
               <option value="All">All Statuses</option>
               <option value="Available">Available</option>
@@ -518,13 +527,13 @@ export const JobLibrary: React.FC = () => {
 
         {/* Collection Metric Bar */}
         {data && (
-          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
             <span>
-              Total Listings: <strong className="text-slate-800">{data.total_count}</strong>
+              Total Listings: <strong className="text-slate-800 dark:text-slate-200">{data.total_count}</strong>
             </span>
             <span>&bull;</span>
             <span>
-              Active for Analysis: <strong className="text-slate-800">{data.analysable_count}</strong>
+              Active for Analysis: <strong className="text-slate-800 dark:text-slate-200">{data.analysable_count}</strong>
             </span>
             <span>&bull;</span>
             <span className="text-slate-400">
@@ -535,29 +544,31 @@ export const JobLibrary: React.FC = () => {
       </div>
 
       {/* Main Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading && !data ? (
-          <div className="p-12 text-center text-xs text-slate-500">Loading job descriptions...</div>
+          <div className="p-12 text-center text-xs text-slate-500 dark:text-slate-400">Loading job descriptions...</div>
         ) : error ? (
-          <div className="p-8 text-center text-xs text-rose-600 bg-rose-50/50">
+          <div className="p-8 text-center text-xs text-rose-600 dark:text-rose-300 bg-rose-50/50 dark:bg-rose-950/40">
             <AlertCircle className="w-5 h-5 mx-auto mb-1 text-rose-500" />
             {error}
           </div>
         ) : !data || data.jobs.length === 0 ? (
-          <div className="p-12 text-center text-xs text-slate-500 space-y-2">
-            <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+          <div className="p-12 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+            <FileText className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto" />
             <p>No job listings found matching the specified filters.</p>
-            <button
-              onClick={handleReSeed}
-              className="text-blue-600 hover:underline font-semibold"
-            >
-              Seed 11 baseline jobs
-            </button>
+            {canAdminSync && (
+              <button
+                onClick={handleReSeed}
+                className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+              >
+                Seed baseline jobs
+              </button>
+            )}
           </div>
         ) : (
           <>
             {/* Mobile-First Stacked Cards (Zero horizontal table scrolling) */}
-            <div className="md:hidden divide-y divide-slate-100">
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
               {data.jobs.map((job) => (
                 <div
                   key={job.id}
@@ -565,15 +576,15 @@ export const JobLibrary: React.FC = () => {
                     setSelectedJob(job);
                     setDetailTab('structured');
                   }}
-                  className="p-4 space-y-2 hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer"
+                  className="p-4 space-y-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 active:bg-slate-100 dark:active:bg-slate-800 transition cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                         {job.title}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-slate-500">
-                        <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-medium">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300 font-medium">
                           {job.external_job_id || `ID-${job.id}`}
                         </span>
                         <span>{job.location}</span>
@@ -585,7 +596,7 @@ export const JobLibrary: React.FC = () => {
                         e.stopPropagation();
                         handleDeleteJob(job.id, job.title);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 shrink-0"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 shrink-0"
                       title="Delete listing"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -601,10 +612,10 @@ export const JobLibrary: React.FC = () => {
                       {job.role_family.split(':')[0]}
                     </span>
                     {getStatusBadge(job.status)}
-                    {job.status === 'Discovered' && (
+                    {canAdminSync && job.status === 'Discovered' && (
                       <button
                         onClick={(e) => handlePromoteToAvailable(job.id, e)}
-                        className="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-300 rounded font-medium"
+                        className="px-2 py-0.5 text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded font-medium"
                       >
                         Promote
                       </button>
@@ -618,7 +629,7 @@ export const JobLibrary: React.FC = () => {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
                     <th className="py-3 px-4 w-12 text-center">#</th>
                     <th className="py-3 px-4">Job Title &amp; Requisition ID</th>
                     <th className="py-3 px-4">Role Family</th>
@@ -628,11 +639,11 @@ export const JobLibrary: React.FC = () => {
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {data.jobs.map((job) => (
                     <tr
                       key={job.id}
-                      className="hover:bg-slate-50/80 transition cursor-pointer group"
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition cursor-pointer group"
                       onClick={() => {
                         setSelectedJob(job);
                         setDetailTab('structured');
@@ -642,11 +653,11 @@ export const JobLibrary: React.FC = () => {
                         {job.id}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition">
+                        <div className="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
                           {job.title}
                         </div>
                         <div className="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
-                          <span className="font-mono bg-slate-100 px-1 rounded text-slate-600 font-medium">
+                          <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-600 dark:text-slate-300 font-medium">
                             {job.external_job_id || `ID-${job.id}`}
                           </span>
                           <span>&bull;</span>
@@ -654,7 +665,7 @@ export const JobLibrary: React.FC = () => {
                           {job.capture_date && (
                             <>
                               <span>&bull;</span>
-                              <span className="text-slate-500 font-medium">Posted: {formatDateDDMMYYYY(job.capture_date)}</span>
+                              <span className="text-slate-500 dark:text-slate-400 font-medium">Posted: {formatDateDDMMYYYY(job.capture_date)}</span>
                             </>
                           )}
                         </div>
@@ -668,14 +679,14 @@ export const JobLibrary: React.FC = () => {
                           {job.role_family.split(':')[0]}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{job.location}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">{job.location}</td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           {getStatusBadge(job.status)}
-                          {job.status === 'Discovered' && (
+                          {canAdminSync && job.status === 'Discovered' && (
                             <button
                               onClick={(e) => handlePromoteToAvailable(job.id, e)}
-                              className="px-1.5 py-0.5 text-[10px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 rounded font-medium transition"
+                              className="px-1.5 py-0.5 text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800 rounded font-medium transition"
                             >
                               Promote
                             </button>
@@ -684,8 +695,8 @@ export const JobLibrary: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         {job.responsibilities || job.qualifications ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                            <Check className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded">
+                            <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             <span>Structured</span>
                           </span>
                         ) : (
@@ -698,14 +709,14 @@ export const JobLibrary: React.FC = () => {
                             setSelectedJob(job);
                             setDetailTab('structured');
                           }}
-                          className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 mr-1 transition"
+                          className="p-1 rounded text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 mr-1 transition"
                           title="View Structured Job Details"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteJob(job.id, job.title)}
-                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                          className="p-1 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition"
                           title="Delete listing"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -723,30 +734,30 @@ export const JobLibrary: React.FC = () => {
       {/* Add Job Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
               <div className="flex items-center space-x-2">
-                <Briefcase className="w-5 h-5 text-blue-600" />
+                <Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Add New Job Listing</h3>
-                  <p className="text-[11px] text-slate-500">Auto-extract metadata & structured sections from doc or text</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Add New Job Listing</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Auto-extract metadata &amp; structured sections from doc or text</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Mode selection tabs */}
-            <div className="border-b border-slate-200 bg-slate-100 px-6 pt-2 flex space-x-4 text-xs font-semibold">
+            <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/80 px-6 pt-2 flex space-x-4 text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('upload')}
                 className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${activeTab === 'upload'
-                    ? 'border-blue-600 text-blue-600 font-bold'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-bold'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
               >
                 <Upload className="w-3.5 h-3.5" />
@@ -755,8 +766,8 @@ export const JobLibrary: React.FC = () => {
               <button
                 onClick={() => setActiveTab('paste')}
                 className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${activeTab === 'paste'
-                    ? 'border-blue-600 text-blue-600 font-bold'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-bold'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -766,7 +777,7 @@ export const JobLibrary: React.FC = () => {
 
             <form onSubmit={handleCreateJob} className="p-6 overflow-y-auto space-y-4 flex-1">
               {formError && (
-                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start space-x-2">
+                <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-start space-x-2">
                   <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
                   <span>{formError}</span>
                 </div>
@@ -774,10 +785,10 @@ export const JobLibrary: React.FC = () => {
 
               {/* Upload Dropzone */}
               {activeTab === 'upload' && (
-                <div className="p-4 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 text-center space-y-2">
+                <div className="p-4 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-950/30 text-center space-y-2">
                   <Upload className="w-7 h-7 text-blue-500 mx-auto" />
-                  <div className="text-xs text-slate-600">
-                    <label className="text-blue-600 font-semibold cursor-pointer hover:underline">
+                  <div className="text-xs text-slate-600 dark:text-slate-300">
+                    <label className="text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline">
                       Click to choose a file
                       <input
                         type="file"
@@ -786,23 +797,23 @@ export const JobLibrary: React.FC = () => {
                         className="hidden"
                       />
                     </label>{' '}
-                    or drag & drop
+                    or drag &amp; drop
                   </div>
                   <div className="text-[11px] text-slate-400">
                     Supports text-based PDF, DOCX, and TXT files
                   </div>
                   {uploadLoading && (
-                    <div className="text-xs text-blue-600 animate-pulse font-medium">
-                      Extracting & analyzing document sections...
+                    <div className="text-xs text-blue-600 dark:text-blue-400 animate-pulse font-medium">
+                      Extracting &amp; analyzing document sections...
                     </div>
                   )}
                   {uploadFileInfo && (
-                    <div className="mt-2 text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 rounded p-2 flex items-center justify-between">
+                    <div className="mt-2 text-xs bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded p-2 flex items-center justify-between">
                       <span className="font-medium flex items-center space-x-1.5">
-                        <FileCheck className="w-4 h-4 text-emerald-600" />
+                        <FileCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         <span>{uploadFileInfo.filename}</span>
                       </span>
-                      <span className="text-emerald-700 font-mono">
+                      <span className="text-emerald-700 dark:text-emerald-300 font-mono">
                         {uploadFileInfo.charCount} characters, {uploadFileInfo.lineCount} lines
                       </span>
                     </div>
@@ -814,7 +825,7 @@ export const JobLibrary: React.FC = () => {
               {activeTab === 'paste' && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold text-slate-700">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                       Raw Job Description Text
                     </label>
                     <button
@@ -832,7 +843,7 @@ export const JobLibrary: React.FC = () => {
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     placeholder="Paste verbatim job description text here, then click 'Auto-Extract'..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
                   />
                 </div>
               )}
@@ -841,10 +852,10 @@ export const JobLibrary: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Job Title *</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Job Title *</label>
                     {fieldWarnings.title && (
                       <span
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded cursor-help"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded cursor-help"
                         title={fieldWarnings.title}
                       >
                         <AlertTriangle className="w-3 h-3 text-amber-500" />
@@ -860,18 +871,18 @@ export const JobLibrary: React.FC = () => {
                       clearWarning('title');
                     }}
                     placeholder="e.g. Full Stack Software Developer"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     required
                   />
                   {fieldWarnings.title && (
-                    <p className="text-[11px] text-amber-600 mt-0.5">⚠️ {fieldWarnings.title}</p>
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">{fieldWarnings.title}</p>
                   )}
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Requisition ID / Code</label>
-                    <span className="text-[11px] text-blue-600 font-mono bg-blue-50 px-1.5 py-0.2 rounded">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Requisition ID / Code</label>
+                    <span className="text-[11px] text-blue-600 dark:text-blue-400 font-mono bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.2 rounded">
                       Auto-incremented
                     </span>
                   </div>
@@ -880,7 +891,7 @@ export const JobLibrary: React.FC = () => {
                     value={formReqId}
                     onChange={(e) => setFormReqId(e.target.value)}
                     placeholder="e.g. JB-1"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   <p className="text-[10px] text-slate-400 mt-0.5">Simple numerical format (JB-1, JB-2, etc.)</p>
                 </div>
@@ -889,10 +900,10 @@ export const JobLibrary: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Role Family *</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Role Family *</label>
                     {fieldWarnings.role_family && (
                       <span
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded"
                         title={fieldWarnings.role_family}
                       >
                         <AlertTriangle className="w-3 h-3 text-amber-500" />
@@ -906,7 +917,7 @@ export const JobLibrary: React.FC = () => {
                       setFormFamily(e.target.value);
                       clearWarning('role_family');
                     }}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   >
                     {ROLE_FAMILIES.map((fam) => (
                       <option key={fam} value={fam}>
@@ -917,11 +928,11 @@ export const JobLibrary: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Status</label>
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   >
                     <option value="Available">Available</option>
                     <option value="JD unavailable">JD unavailable</option>
@@ -932,10 +943,10 @@ export const JobLibrary: React.FC = () => {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">Location</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Location</label>
                     {fieldWarnings.location && (
                       <span
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded"
                         title={fieldWarnings.location}
                       >
                         <AlertTriangle className="w-3 h-3 text-amber-500" />
@@ -950,23 +961,23 @@ export const JobLibrary: React.FC = () => {
                       setFormLocation(e.target.value);
                       clearWarning('location');
                     }}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Structured Sections */}
-              <div className="pt-2 border-t border-slate-200 space-y-3">
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <ListChecks className="w-4 h-4 text-blue-600" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     <span>Extracted Human-Readable Sections</span>
                   </h4>
                   {formDescription && (
                     <button
                       type="button"
                       onClick={() => setShowOriginalInModal(!showOriginalInModal)}
-                      className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-semibold"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-semibold"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>{showOriginalInModal ? 'Hide Original Text' : 'View Full Original Text'}</span>
@@ -976,7 +987,7 @@ export const JobLibrary: React.FC = () => {
 
                 {/* Optional side-by-side view of Original Text */}
                 {showOriginalInModal && (
-                  <div className="p-3 bg-slate-900 text-slate-200 rounded-lg text-xs font-mono max-h-48 overflow-y-auto leading-relaxed border border-slate-700">
+                  <div className="p-3 bg-slate-950 text-slate-200 rounded-lg text-xs font-mono max-h-48 overflow-y-auto leading-relaxed border border-slate-700">
                     <div className="flex items-center justify-between pb-1 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
                       <span>Original Immutable Text Reference</span>
                       <button
@@ -994,13 +1005,13 @@ export const JobLibrary: React.FC = () => {
                 {/* Section 1: Responsibilities */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                       <ListChecks className="w-3.5 h-3.5 text-blue-500" />
                       <span>Job Responsibilities</span>
                     </label>
                     {fieldWarnings.responsibilities && (
                       <span
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded"
                         title={fieldWarnings.responsibilities}
                       >
                         <AlertTriangle className="w-3 h-3 text-amber-500" />
@@ -1016,23 +1027,23 @@ export const JobLibrary: React.FC = () => {
                       clearWarning('responsibilities');
                     }}
                     placeholder="- List key responsibilities or duties here..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   {fieldWarnings.responsibilities && (
-                    <p className="text-[11px] text-amber-600 mt-0.5">⚠️ {fieldWarnings.responsibilities}</p>
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">{fieldWarnings.responsibilities}</p>
                   )}
                 </div>
 
                 {/* Section 2: Required Qualifications */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                       <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
                       <span>Job Qualifications (Required)</span>
                     </label>
                     {fieldWarnings.qualifications && (
                       <span
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded"
                         title={fieldWarnings.qualifications}
                       >
                         <AlertTriangle className="w-3 h-3 text-amber-500" />
@@ -1048,23 +1059,23 @@ export const JobLibrary: React.FC = () => {
                       clearWarning('qualifications');
                     }}
                     placeholder="- List required skills, degree, and years of experience..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   {fieldWarnings.qualifications && (
-                    <p className="text-[11px] text-amber-600 mt-0.5">⚠️ {fieldWarnings.qualifications}</p>
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">{fieldWarnings.qualifications}</p>
                   )}
                 </div>
 
                 {/* Section 3: Preferred Qualifications */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 text-amber-500" />
                       <span>Preferred Qualifications / Skills (Optional)</span>
                     </label>
                     {fieldWarnings.preferred_qualifications && (
                       <span
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-1.5 py-0.5 rounded"
                         title={fieldWarnings.preferred_qualifications}
                       >
                         <AlertTriangle className="w-3 h-3 text-amber-500" />
@@ -1080,13 +1091,13 @@ export const JobLibrary: React.FC = () => {
                       clearWarning('preferred_qualifications');
                     }}
                     placeholder="- List nice-to-have or bonus qualifications..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Section 4: Summary / About the Role */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     About Role / Summary (Optional)
                   </label>
                   <textarea
@@ -1094,14 +1105,14 @@ export const JobLibrary: React.FC = () => {
                     value={formSummary}
                     onChange={(e) => setFormSummary(e.target.value)}
                     placeholder="Brief intro narrative or team mission..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Context Note */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Context / Annotation Note
                 </label>
                 <input
@@ -1109,15 +1120,15 @@ export const JobLibrary: React.FC = () => {
                   value={formContextNote}
                   onChange={(e) => setFormContextNote(e.target.value)}
                   placeholder="e.g. Sales CDO initiative, mentions Alteryx and Collibra"
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200">
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                 >
                   Cancel
                 </button>
@@ -1137,13 +1148,13 @@ export const JobLibrary: React.FC = () => {
       {/* Human-Readable View Job Drawer / Modal */}
       {selectedJob && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/60">
               <div>
-                <h3 className="text-base font-bold text-slate-900">{selectedJob.title}</h3>
-                <div className="flex items-center space-x-2 text-xs text-slate-500 mt-0.5">
-                  <span className="font-mono text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedJob.title}</h3>
+                <div className="flex flex-wrap items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <span className="font-mono text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded">
                     {selectedJob.external_job_id || `ID-${selectedJob.id}`}
                   </span>
                   <span>&bull;</span>
@@ -1153,52 +1164,52 @@ export const JobLibrary: React.FC = () => {
                   {selectedJob.capture_date && (
                     <>
                       <span>&bull;</span>
-                      <span className="text-slate-700 font-semibold">Posted: {formatDateDDMMYYYY(selectedJob.capture_date)}</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold">Posted: {formatDateDDMMYYYY(selectedJob.capture_date)}</span>
                     </>
                   )}
                 </div>
               </div>
               <button
                 onClick={() => setSelectedJob(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* View Mode Tabs */}
-            <div className="border-b border-slate-200 bg-slate-100 px-6 pt-2 flex space-x-4 text-xs font-semibold">
+            <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/80 px-6 pt-2 flex space-x-4 text-xs font-semibold">
               <button
                 onClick={() => setDetailTab('structured')}
                 className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${detailTab === 'structured'
-                    ? 'border-blue-600 text-blue-600 font-bold'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-bold'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
               >
                 <ListChecks className="w-3.5 h-3.5" />
-                <span>Structured Sections (Human Readable)</span>
+                <span>Structured Sections</span>
               </button>
               <button
                 onClick={() => setDetailTab('original')}
                 className={`pb-2 border-b-2 transition flex items-center gap-1.5 ${detailTab === 'original'
-                    ? 'border-blue-600 text-blue-600 font-bold'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-bold'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Original Verbatim Text (FR-03 / Audit)</span>
+                <span>Original Full Text</span>
               </button>
             </div>
 
             {/* Content Body */}
             <div className="p-6 overflow-y-auto space-y-4 flex-1">
               {/* Metadata Pill */}
-              <div className="flex flex-wrap items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs gap-2">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200 dark:border-slate-700 text-xs gap-2">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1.5">
-                    <span>Status:</span>
+                    <span className="text-slate-600 dark:text-slate-300">Status:</span>
                     {getStatusBadge(selectedJob.status)}
-                    {selectedJob.status === 'Discovered' && (
+                    {canAdminSync && selectedJob.status === 'Discovered' && (
                       <button
                         onClick={() => handlePromoteToAvailable(selectedJob.id)}
                         className="px-2 py-0.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium transition shadow-sm"
@@ -1218,12 +1229,12 @@ export const JobLibrary: React.FC = () => {
                 {selectedJob.original_description && (
                   <button
                     onClick={() => copyToClipboard(selectedJob.original_description!)}
-                    className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs shadow-sm transition"
+                    className="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs shadow-sm transition"
                   >
                     {copied ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-600">Copied!</span>
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -1236,7 +1247,7 @@ export const JobLibrary: React.FC = () => {
               </div>
 
               {selectedJob.context_note && (
-                <div className="p-2.5 bg-blue-50/70 border border-blue-200 rounded-lg text-xs text-blue-900">
+                <div className="p-2.5 bg-blue-50/70 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-900 dark:text-blue-200">
                   <span className="font-semibold">Context Note:</span> {selectedJob.context_note}
                 </div>
               )}
@@ -1246,44 +1257,44 @@ export const JobLibrary: React.FC = () => {
                 <div className="space-y-4">
                   {/* Summary */}
                   {selectedJob.summary && (
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                         About the Role / Summary
                       </h4>
-                      <p className="text-xs text-slate-800 leading-relaxed">{selectedJob.summary}</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">{selectedJob.summary}</p>
                     </div>
                   )}
 
                   {/* Responsibilities */}
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                      <ListChecks className="w-4 h-4 text-blue-600" />
+                  <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       <span>Job Responsibilities</span>
                     </h4>
                     {renderBulletList(
                       selectedJob.responsibilities,
-                      'No specific responsibilities section extracted. Refer to Original Verbatim Text.'
+                      'No specific responsibilities section extracted. Refer to Original Full Text.'
                     )}
                   </div>
 
                   {/* Required Qualifications */}
-                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                      <GraduationCap className="w-4 h-4 text-indigo-600" />
-                      <span>Required Qualifications, Capabilities & Skills</span>
+                  <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <span>Required Qualifications, Capabilities &amp; Skills</span>
                     </h4>
                     {renderBulletList(
                       selectedJob.qualifications,
-                      'No specific required qualifications section extracted. Refer to Original Verbatim Text.'
+                      'No specific required qualifications section extracted. Refer to Original Full Text.'
                     )}
                   </div>
 
                   {/* Preferred Qualifications */}
                   {selectedJob.preferred_qualifications && (
-                    <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <Star className="w-4 h-4 text-amber-500" />
-                        <span>Preferred Qualifications & Capabilities</span>
+                        <span>Preferred Qualifications &amp; Capabilities</span>
                       </h4>
                       {renderBulletList(selectedJob.preferred_qualifications, '')}
                     </div>
@@ -1294,9 +1305,9 @@ export const JobLibrary: React.FC = () => {
               {/* Tab 2: Original Verbatim Immutable Text */}
               {detailTab === 'original' && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                     <span className="font-semibold uppercase tracking-wider">
-                      Immutable Captured Source Text (FR-01 / FR-03)
+                      Original Captured Text
                     </span>
                     <span>
                       {selectedJob.original_description ? `${selectedJob.original_description.length} characters` : '0 characters'}
@@ -1304,13 +1315,13 @@ export const JobLibrary: React.FC = () => {
                   </div>
 
                   {selectedJob.original_description ? (
-                    <div className="bg-slate-900 text-slate-100 p-4 rounded-xl font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-[55vh] overflow-y-auto border border-slate-800">
+                    <div className="bg-slate-950 text-slate-100 p-4 rounded-xl font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-[55vh] overflow-y-auto border border-slate-800">
                       {selectedJob.original_description}
                     </div>
                   ) : (
-                    <div className="p-6 rounded-xl border border-dashed border-rose-200 bg-rose-50/50 text-center text-xs text-rose-700">
+                    <div className="p-6 rounded-xl border border-dashed border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/30 text-center text-xs text-rose-700 dark:text-rose-300">
                       <AlertCircle className="w-6 h-6 mx-auto mb-2 text-rose-400" />
-                      Full description text was unavailable at time of capture. Preserved as placeholder metadata and excluded from frequency denominators.
+                      Full description text was unavailable at time of capture. Excluded from skill coverage counts.
                     </div>
                   )}
                 </div>
@@ -1318,36 +1329,24 @@ export const JobLibrary: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
-              <a
-                href="http://127.0.0.1:8080"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-blue-600 hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Inspect in SQLite Console (FR-41)</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-
-              <div className="flex items-center gap-2">
-                {selectedJob.source_url && (
-                  <a
-                    href={selectedJob.source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-sm"
-                  >
-                    <span>Click to Apply</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-                <button
-                  onClick={() => setSelectedJob(null)}
-                  className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium transition shadow-sm"
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-end gap-2">
+              {selectedJob.source_url && (
+                <a
+                  href={selectedJob.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-sm"
                 >
-                  Close
-                </button>
-              </div>
+                  <span>Go and Apply</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+              <button
+                onClick={() => setSelectedJob(null)}
+                className="px-4 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-medium transition shadow-sm"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -1356,81 +1355,83 @@ export const JobLibrary: React.FC = () => {
       {/* JPMC Oracle Cloud Live Sync Modal */}
       {isSyncModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between">
               <div className="flex items-center space-x-2.5">
-                <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-950/70 rounded-lg text-indigo-600 dark:text-indigo-400">
                   <Globe className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Sync from JPMorgan Chase Careers</h3>
-                  <p className="text-xs text-slate-500">Live JSON ingestion from Oracle Recruiting Cloud (CX_1001)</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Sync from JPMorgan Chase Careers</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Live ingestion from JPMC Careers API</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsSyncModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs text-slate-600">
-              <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-1.5 text-indigo-900">
-                <div className="font-semibold flex items-center gap-1.5 text-indigo-800">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                  <span>Oracle Cloud Recruiting Endpoints</span>
+            <div className="p-6 space-y-4 text-xs text-slate-600 dark:text-slate-300">
+              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800 rounded-xl space-y-1.5 text-indigo-900 dark:text-indigo-200">
+                <div className="font-semibold flex items-center gap-1.5 text-indigo-800 dark:text-indigo-200">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Live JPMC Careers Feed</span>
                 </div>
-                <p className="text-[11px] leading-relaxed text-indigo-700">
-                  Directly queries JPMC's candidate experience API for Goregaon and Mumbai postings. New listings enter with status <code className="bg-white px-1 py-0.5 rounded border font-semibold">Discovered</code>, preserving your analysable baseline ($N=10$) until you review and promote them.
+                <p className="text-[11px] leading-relaxed text-indigo-700 dark:text-indigo-300">
+                  Queries JPMC&apos;s careers feed for Goregaon and Mumbai postings. New listings enter as{' '}
+                  <code className="bg-white dark:bg-slate-800 px-1 py-0.5 rounded border dark:border-slate-700 font-semibold">Discovered</code>{' '}
+                  until you review and promote them to Available.
                 </p>
               </div>
 
               {syncError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl flex items-center gap-2">
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{syncError}</span>
                 </div>
               )}
 
               {syncResult && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
-                  <div className="font-bold text-emerald-800 flex items-center gap-1.5 text-xs">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-2">
+                  <div className="font-bold text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5 text-xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Sync Completed Successfully</span>
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-center pt-1">
-                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
-                      <div className="text-base font-bold text-indigo-600">{syncResult.added}</div>
-                      <div className="text-[10px] text-slate-500">Discovered</div>
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-emerald-100 dark:border-slate-700">
+                      <div className="text-base font-bold text-indigo-600 dark:text-indigo-400">{syncResult.added}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Discovered</div>
                     </div>
-                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
-                      <div className="text-base font-bold text-blue-600">{syncResult.updated}</div>
-                      <div className="text-[10px] text-slate-500">Backfilled</div>
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-emerald-100 dark:border-slate-700">
+                      <div className="text-base font-bold text-blue-600 dark:text-blue-400">{syncResult.updated}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Backfilled</div>
                     </div>
-                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
-                      <div className="text-base font-bold text-slate-600">{syncResult.unchanged}</div>
-                      <div className="text-[10px] text-slate-500">Unchanged</div>
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-emerald-100 dark:border-slate-700">
+                      <div className="text-base font-bold text-slate-600 dark:text-slate-300">{syncResult.unchanged}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Unchanged</div>
                     </div>
-                    <div className="p-2 bg-white rounded-lg border border-emerald-100">
-                      <div className="text-base font-bold text-amber-600">{syncResult.stale}</div>
-                      <div className="text-[10px] text-slate-500">Stale</div>
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-emerald-100 dark:border-slate-700">
+                      <div className="text-base font-bold text-amber-600 dark:text-amber-400">{syncResult.stale}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Stale</div>
                     </div>
                   </div>
-                  <p className="text-[11px] text-emerald-700 italic">{syncResult.message}</p>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 italic">{syncResult.message}</p>
                 </div>
               )}
 
               {!syncResult && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Max Job Requisitions to Query:
                     </label>
                     <select
                       value={syncLimit}
                       onChange={(e) => setSyncLimit(Number(e.target.value))}
-                      className="w-full py-2 px-3 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500"
+                      className="w-full py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value={10}>10 Requisitions</option>
                       <option value={25}>25 Requisitions (Default Page)</option>
@@ -1444,21 +1445,21 @@ export const JobLibrary: React.FC = () => {
                       type="checkbox"
                       checked={syncDryRun}
                       onChange={(e) => setSyncDryRun(e.target.checked)}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-xs text-slate-700 font-medium">
-                      Dry Run Mode (simulate sync without saving changes to local database)
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+                      Dry Run Mode (preview without saving changes)
                     </span>
                   </label>
                 </div>
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setIsSyncModalOpen(false)}
-                className="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition"
+                className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition"
               >
                 Close
               </button>

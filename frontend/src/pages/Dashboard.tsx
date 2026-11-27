@@ -68,7 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   if (loading) {
     return (
-      <div className="py-12 text-center text-xs sm:text-sm text-slate-500">
+      <div className="py-12 text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400">
         Loading recommendations and skills in demand...
       </div>
     );
@@ -76,7 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   if (error) {
     return (
-      <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+      <div className="p-4 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300">
         {error}
       </div>
     );
@@ -85,15 +85,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* 1. TOP RECOMMENDED ROLES (Vault -> Resume -> Empty Prompt) */}
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-xs">
-        <div className="p-4 sm:p-5 border-b border-slate-100 rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 shrink-0">
               <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5 relative">
-                <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                   Top Recommended Roles
                 </h2>
                 <div
@@ -106,7 +106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     aria-label="How match scores work"
                     aria-expanded={scoreInfoPinned || scoreInfoHover}
                     onClick={() => setScoreInfoPinned((prev) => !prev)}
-                    className="p-0.5 rounded-full text-slate-400 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition"
+                    className="p-0.5 rounded-full text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition"
                   >
                     <Info className="w-4 h-4" />
                   </button>
@@ -114,10 +114,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <div
                       role="dialog"
                       aria-label="Scoring System Explanation"
-                      className="fixed inset-x-3 top-20 sm:inset-x-auto sm:absolute sm:left-0 sm:top-full sm:mt-2 z-40 sm:w-80 p-3.5 rounded-xl bg-white border border-slate-200 shadow-xl text-left space-y-2"
+                      className="fixed inset-x-3 top-20 sm:inset-x-auto sm:absolute sm:left-0 sm:top-full sm:mt-2 z-40 sm:w-80 p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl text-left space-y-2"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-slate-900">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
                           How Your Match Scores Work
                         </span>
                         {scoreInfoPinned && (
@@ -127,19 +127,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               setScoreInfoPinned(false);
                               setScoreInfoHover(false);
                             }}
-                            className="text-slate-400 hover:text-slate-600 p-0.5"
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
                             aria-label="Close score explanation"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
-                        <span className="font-bold text-orange-600">Orange (Quick Estimate):</span>{' '}
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                        <span className="font-bold text-orange-600 dark:text-orange-400">Orange (Quick Estimate):</span>{' '}
                         An instant automatic estimate based on matching skills, job wording, and career level — no AI usage required.
                       </p>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">
-                        <span className="font-bold text-emerald-600">Green (AI Score):</span>{' '}
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">Green (AI Score):</span>{' '}
                         Saved automatically when you run <strong>Compare with AI</strong> in your Experience Vault. AI checks deeper details like years of experience and specialized domain requirements.
                       </p>
                     </div>
@@ -147,14 +147,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
               </div>
               {summary && (
-                <p className="text-[11px] sm:text-xs text-slate-500">{summary.source_label}</p>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">{summary.source_label}</p>
               )}
             </div>
           </div>
 
           <button
             onClick={() => onNavigate('vault')}
-            className="self-start sm:self-auto inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+            className="self-start sm:self-auto inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
           >
             <span>Open Vault</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -163,7 +163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {!summary || summary.ranking_source === 'none' ? (
           <div className="p-6 text-center space-y-4">
-            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto">
               {summary?.empty_prompt ||
                 'Add your work/academic history or upload a resume to see tailored role rankings.'}
             </p>
@@ -177,7 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </button>
               <button
                 onClick={() => onNavigate('vault')}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition"
               >
                 <FileText className="w-4 h-4" />
                 <span>Upload Resume</span>
@@ -185,19 +185,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
         ) : summary.top_matches.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500">
+          <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
             No active job postings available to rank yet. Add or sync jobs in Job Library.
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {summary.top_matches.map((match, idx) => (
               <div
                 key={match.job_id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition"
               >
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-start gap-2.5">
-                    <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                       #{idx + 1}
                     </span>
                     <div className="min-w-0">
@@ -218,17 +218,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             setJobLoading(false);
                           }
                         }}
-                        className="text-left text-sm font-bold text-slate-900 hover:text-blue-600 hover:underline leading-snug transition"
+                        className="text-left text-sm font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline leading-snug transition"
                       >
                         {match.title}
                       </button>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                         {match.external_job_id && (
-                          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+                          <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">
                             {match.external_job_id}
                           </span>
                         )}
-                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
+                        <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 font-medium">
                           {match.role_family.split(':')[0]}
                         </span>
                         {match.capture_date && <span>Posted {formatDateDDMMYYYY(match.capture_date)}</span>}
@@ -240,7 +240,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       {match.matched_skills.map((s) => (
                         <span
                           key={s}
-                          className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium"
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium"
                         >
                           {s}
                         </span>
@@ -252,12 +252,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <div className="flex items-center justify-between sm:justify-end gap-3 pl-8 sm:pl-0 shrink-0">
                   <div className="text-left sm:text-right">
                     <div
-                      className={`text-xs font-bold ${match.is_ai_score ? 'text-emerald-600' : 'text-orange-600'
+                      className={`text-xs font-bold ${match.is_ai_score ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'
                         }`}
                     >
                       {match.score}% {match.is_ai_score ? 'AI Score' : 'Quick Estimate'}
                     </div>
-                    <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+                    <div className="w-24 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1">
                       <div
                         className={`h-full rounded-full ${match.is_ai_score ? 'bg-emerald-500' : 'bg-orange-500'
                           }`}
@@ -288,15 +288,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </section>
 
       {/* 2. SKILLS IN DEMAND (Mobile-Friendly Stacked Cards, Tap for Quotes) */}
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 shrink-0">
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
               <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-slate-900">Skills in Demand</h2>
-              <p className="text-[11px] sm:text-xs text-slate-500">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Skills in Demand</h2>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 Across {summary?.analysable_jobs_count ?? 0} active job descriptions &bull; Tap a skill to read quotes
               </p>
             </div>
@@ -305,14 +305,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="flex items-center gap-2">
             <a
               href={getExportCoverageUrl('csv')}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold"
             >
               <Download className="w-3.5 h-3.5" />
               <span>CSV</span>
             </a>
             <a
               href={getExportCoverageUrl('xlsx')}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-semibold"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Excel</span>
@@ -321,27 +321,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
 
         {!summary || summary.skills_in_demand.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500">
+          <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
             No extracted skills found yet. Add jobs in Job Library or open Explorer.
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {summary.skills_in_demand.map((skill) => (
               <button
                 key={skill.skill_id}
                 onClick={() => handleOpenEvidence(skill)}
-                className="w-full text-left p-4 hover:bg-slate-50 transition flex flex-col gap-2"
+                className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition flex flex-col gap-2"
               >
                 <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-sm font-bold text-slate-900 truncate">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
                       {skill.canonical_name}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 truncate max-w-[130px] sm:max-w-none">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 truncate max-w-[130px] sm:max-w-none">
                       {skill.category}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0 text-xs font-semibold text-blue-600">
+                  <div className="flex items-center gap-1.5 shrink-0 text-xs font-semibold text-blue-600 dark:text-blue-400">
                     <span>
                       {skill.distinct_job_count}/{summary.analysable_jobs_count} ({skill.coverage_percentage}%)
                     </span>
@@ -349,14 +349,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   </div>
                 </div>
 
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-600 rounded-full"
                     style={{ width: `${Math.min(100, skill.coverage_percentage)}%` }}
                   />
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-[11px] text-slate-500">
+                <div className="flex flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                   <span>Required: {skill.required_count}</span>
                   <span>&bull;</span>
                   <span>Preferred: {skill.preferred_count}</span>
@@ -369,20 +369,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Mobile-Friendly Skill Evidence Modal / Bottom Sheet */}
       {activeSkill && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 overflow-hidden">
-          <div className="bg-white w-full max-w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl min-w-0">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3 min-w-0">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl min-w-0">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 min-w-0">
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
                   {activeSkill.canonical_name}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Mentioned in {activeSkill.distinct_job_count} active job(s)
                 </p>
               </div>
               <button
                 onClick={() => setActiveSkill(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 shrink-0"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -390,29 +390,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
             <div className="p-4 overflow-y-auto overflow-x-hidden overscroll-contain space-y-3 min-w-0">
               {evidenceLoading ? (
-                <div className="py-8 text-center text-xs text-slate-500">Loading quotes...</div>
+                <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">Loading quotes...</div>
               ) : !evidence || evidence.items.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-500">No snippets found.</div>
+                <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">No snippets found.</div>
               ) : (
                 evidence.items.map((item) => (
                   <div
                     key={`${item.job_id}-${item.requirement_type}`}
-                    className="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5 min-w-0"
+                    className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 space-y-1.5 min-w-0"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
-                      <span className="text-xs font-bold text-slate-900 break-words min-w-0">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white break-words min-w-0">
                         {item.job_title}
                       </span>
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${item.requirement_type === 'Required'
-                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                          : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          ? 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          : 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                           }`}
                       >
                         {item.requirement_type}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-700 italic leading-relaxed break-words">
+                    <p className="text-xs text-slate-700 dark:text-slate-300 italic leading-relaxed break-words">
                       &ldquo;{item.evidence_snippet}&rdquo;
                     </p>
                   </div>
@@ -425,15 +425,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Mobile-Friendly Job Details Modal / Bottom Sheet */}
       {(jobLoading || selectedJob || jobError) && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 overflow-hidden">
-          <div className="bg-white w-full max-w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl min-w-0">
-            <div className="p-4 border-b border-slate-200 flex items-start justify-between gap-3 min-w-0">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl min-w-0">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3 min-w-0">
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug break-words">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
                   {selectedJob ? selectedJob.title : 'Job Details'}
                 </h3>
                 {selectedJob && (
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {selectedJob.external_job_id || selectedJob.source_job_id || `Job #${selectedJob.id}`} &bull; {selectedJob.company_name} &bull; {selectedJob.location}
                     {selectedJob.capture_date ? ` • Posted ${formatDateDDMMYYYY(selectedJob.capture_date)}` : ''}
                   </p>
@@ -445,7 +445,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   setSelectedJob(null);
                   setJobError(null);
                 }}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 shrink-0"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -453,21 +453,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
             <div className="p-4 overflow-y-auto overscroll-contain space-y-4">
               {jobLoading ? (
-                <div className="py-10 text-center text-xs text-slate-500">
+                <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
                   Loading job details...
                 </div>
               ) : jobError ? (
-                <div className="p-3 rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-700">
+                <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/60 text-xs text-rose-700 dark:text-rose-300">
                   {jobError}
                 </div>
               ) : selectedJob ? (
                 <>
                   {selectedJob.summary && (
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Summary
                       </h4>
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                         {selectedJob.summary}
                       </p>
                     </div>
@@ -475,10 +475,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                   {selectedJob.responsibilities && (
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Responsibilities
                       </h4>
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                         {selectedJob.responsibilities}
                       </p>
                     </div>
@@ -486,10 +486,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                   {selectedJob.qualifications && (
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Required Qualifications
                       </h4>
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                         {selectedJob.qualifications}
                       </p>
                     </div>
@@ -497,10 +497,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                   {selectedJob.preferred_qualifications && (
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         Preferred Qualifications
                       </h4>
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                         {selectedJob.preferred_qualifications}
                       </p>
                     </div>
@@ -511,10 +511,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     !selectedJob.qualifications &&
                     selectedJob.original_description && (
                       <div className="space-y-1">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           Description
                         </h4>
-                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                        <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                           {selectedJob.original_description}
                         </p>
                       </div>
@@ -523,14 +523,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               ) : null}
             </div>
 
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedJob(null);
                   setJobError(null);
                 }}
-                className="px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                className="px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 Close
               </button>

@@ -92,19 +92,19 @@ export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({
   const authBody = (
     <>
       {!clientId ? (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2 text-left">
+        <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2 text-left">
           <Lock className="w-4 h-4 shrink-0 mt-0.5" />
           <span>Missing GOOGLE_CLIENT_ID in environment configuration.</span>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2.5">
           <div ref={buttonRef} className="min-h-[44px]" />
-          {signingIn && <span className="text-xs text-slate-500">Verifying session...</span>}
+          {signingIn && <span className="text-xs text-slate-500 dark:text-slate-400">Signing in...</span>}
         </div>
       )}
 
       {error && (
-        <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+        <div className="p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-lg text-xs text-rose-700 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -116,15 +116,15 @@ export const GoogleLoginGate: React.FC<GoogleLoginGateProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center space-y-5">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 text-center space-y-5">
         <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center mx-auto">
           <Compass className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Career Intelligence</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Sign in with Google to access your private Experience Vault, Resumes, and Roadmap.
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Career Intelligence</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Sign in with Google to access your private projects, resumes, and roadmap.
           </p>
         </div>
         {authBody}

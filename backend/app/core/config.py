@@ -63,6 +63,11 @@ class Settings:
 
     # Authentication & Session Security (Google OAuth 2.0 + HttpOnly JWT cookies)
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    ADMIN_EMAILS: set[str] = {
+        e.strip().lower()
+        for e in os.getenv("JCI_ADMIN_EMAILS", "").split(",")
+        if e.strip()
+    }
     _RAW_JWT_SECRET: str = (
         os.getenv("JWT_SECRET", "").strip()
         or os.getenv("JCI_JWT_SECRET", "").strip()

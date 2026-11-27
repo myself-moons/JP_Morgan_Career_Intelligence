@@ -129,8 +129,8 @@ export const MyRoadmap: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900">My Roadmap</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">My Roadmap</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Track the skills you decide to learn and save your own courses, certifications, or notes.
           </p>
         </div>
@@ -139,14 +139,14 @@ export const MyRoadmap: React.FC = () => {
           <button
             onClick={() => handleReviewAI(false)}
             disabled={reviewing}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 text-xs font-semibold"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>{reviewing ? 'Reviewing...' : 'Review with AI'}</span>
           </button>
           <button
             onClick={() => setShowAddLink(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold"
           >
             <Link2 className="w-3.5 h-3.5" />
             <span>Save Link</span>
@@ -163,15 +163,15 @@ export const MyRoadmap: React.FC = () => {
 
       {/* Optional AI Review Card */}
       {review && (
-        <div className="bg-white rounded-2xl border border-indigo-200 p-4 space-y-3 shadow-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-indigo-200 dark:border-indigo-800 p-4 space-y-3 shadow-xs">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-indigo-900">AI Roadmap Feedback</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+              <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">AI Roadmap Feedback</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                 {review.model_used}
               </span>
               {review.is_cached && (
-                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300">
                   Cached
                 </span>
               )}
@@ -179,24 +179,24 @@ export const MyRoadmap: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleReviewAI(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Refresh AI</span>
               </button>
-              <button onClick={() => setReview(null)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setReview(null)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <p className="text-xs sm:text-sm text-slate-700">{review.summary}</p>
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300">{review.summary}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             {review.missing_common_skills.length > 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                <strong className="block text-amber-900 mb-1">Missing Common Skills</strong>
-                <ul className="list-disc list-inside text-amber-800 space-y-0.5">
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800">
+                <strong className="block text-amber-900 dark:text-amber-200 mb-1">Missing Common Skills</strong>
+                <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 space-y-0.5">
                   {review.missing_common_skills.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -204,9 +204,9 @@ export const MyRoadmap: React.FC = () => {
               </div>
             )}
             {review.niche_or_low_priority.length > 0 && (
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                <strong className="block text-slate-800 mb-1">Niche / Optional Items</strong>
-                <ul className="list-disc list-inside text-slate-600 space-y-0.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+                <strong className="block text-slate-800 dark:text-slate-100 mb-1">Niche / Optional Items</strong>
+                <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-0.5">
                   {review.niche_or_low_priority.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -214,9 +214,9 @@ export const MyRoadmap: React.FC = () => {
               </div>
             )}
             {review.project_ideas.length > 0 && (
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                <strong className="block text-emerald-900 mb-1">Suggested Mini-Projects</strong>
-                <ul className="list-disc list-inside text-emerald-800 space-y-0.5">
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800">
+                <strong className="block text-emerald-900 dark:text-emerald-200 mb-1">Suggested Mini-Projects</strong>
+                <ul className="list-disc list-inside text-emerald-800 dark:text-emerald-300 space-y-0.5">
                   {review.project_ideas.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -230,12 +230,12 @@ export const MyRoadmap: React.FC = () => {
       {/* Roadmap Items */}
       <section className="space-y-3">
         {loading ? (
-          <div className="p-8 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200">
+          <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
             Loading your roadmap...
           </div>
         ) : items.length === 0 ? (
-          <div className="p-6 text-center bg-white rounded-2xl border border-slate-200 space-y-2">
-            <p className="text-xs sm:text-sm text-slate-600">
+          <div className="p-6 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
               Your roadmap is empty. Add skills from Explorer or click &ldquo;Add Skill&rdquo;.
             </p>
           </div>
@@ -243,23 +243,23 @@ export const MyRoadmap: React.FC = () => {
           items.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
             >
               <div className="space-y-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900">{item.skill_name}</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{item.skill_name}</span>
                   <span
                     className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${item.priority === 'High'
-                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        ? 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
                         : item.priority === 'Low'
-                          ? 'bg-slate-100 text-slate-600 border-slate-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                          : 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
                       }`}
                   >
                     {item.priority}
                   </span>
                 </div>
-                {item.goal_note && <p className="text-xs text-slate-600">{item.goal_note}</p>}
+                {item.goal_note && <p className="text-xs text-slate-600 dark:text-slate-300">{item.goal_note}</p>}
               </div>
 
               <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
@@ -269,7 +269,7 @@ export const MyRoadmap: React.FC = () => {
                     const updated = await updateRoadmapItem(item.id, { status: e.target.value });
                     setItems((prev) => prev.map((x) => (x.id === item.id ? updated : x)));
                   }}
-                  className="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white"
+                  className="text-xs font-semibold border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 >
                   {STATUS_OPTIONS.map((st) => (
                     <option key={st} value={st}>
@@ -282,7 +282,7 @@ export const MyRoadmap: React.FC = () => {
                     await deleteRoadmapItem(item.id);
                     setItems((prev) => prev.filter((x) => x.id !== item.id));
                   }}
-                  className="p-1.5 text-slate-400 hover:text-rose-600"
+                  className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -293,27 +293,27 @@ export const MyRoadmap: React.FC = () => {
       </section>
 
       {/* Personal Saved Resources & Certifications */}
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900">
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
             Saved Links &amp; Certifications ({resources.length})
           </h3>
         </div>
         {resources.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500">
+          <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
             No saved links yet. Paste any course, certification, doc, or article URL you want to keep.
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {resources.map((r) => (
               <div key={r.id} className="p-4 flex items-start justify-between gap-3">
                 <div className="space-y-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                       {r.resource_type}
                     </span>
                     {r.skill_name && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300">
                         {r.skill_name}
                       </span>
                     )}
@@ -321,20 +321,20 @@ export const MyRoadmap: React.FC = () => {
                       href={r.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs sm:text-sm font-bold text-blue-600 hover:underline inline-flex items-center gap-1"
+                      className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                     >
                       <span>{r.title}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
-                  {r.notes && <p className="text-xs text-slate-600">{r.notes}</p>}
+                  {r.notes && <p className="text-xs text-slate-600 dark:text-slate-300">{r.notes}</p>}
                 </div>
                 <button
                   onClick={async () => {
                     await deleteSavedResource(r.id);
                     setResources((prev) => prev.filter((x) => x.id !== r.id));
                   }}
-                  className="p-1 text-slate-400 hover:text-rose-600 shrink-0"
+                  className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 shrink-0"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -346,17 +346,17 @@ export const MyRoadmap: React.FC = () => {
 
       {/* Add Roadmap Skill Modal */}
       {showAddGoal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900">Add Skill to Roadmap</h3>
-              <button onClick={() => setShowAddGoal(false)} className="text-slate-400 hover:text-slate-700">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Add Skill to Roadmap</h3>
+              <button onClick={() => setShowAddGoal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAddGoal} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Short Skill Name *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Short Skill Name *</label>
                 <SkillTagInput
                   selectedTags={skillTags}
                   onChange={setSkillTags}
@@ -365,20 +365,20 @@ export const MyRoadmap: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Optional Short Goal Note</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Optional Short Goal Note</label>
                 <input
                   value={goalNote}
                   onChange={(e) => setGoalNote(e.target.value)}
                   placeholder="e.g. Glossary & Lineage basics"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Priority</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Priority</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                  className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 >
                   {PRIORITY_OPTIONS.map((p) => (
                     <option key={p} value={p}>
@@ -407,43 +407,43 @@ export const MyRoadmap: React.FC = () => {
 
       {/* Save Resource Link Modal */}
       {showAddLink && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900">Save Course or Certification URL</h3>
-              <button onClick={() => setShowAddLink(false)} className="text-slate-400 hover:text-slate-700">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Save Course or Certification URL</h3>
+              <button onClick={() => setShowAddLink(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleAddResource} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Title *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Title *</label>
                 <input
                   required
                   value={resTitle}
                   onChange={(e) => setResTitle(e.target.value)}
                   placeholder="e.g. PostgreSQL Window Functions Guide"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">URL *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">URL *</label>
                 <input
                   required
                   type="url"
                   value={resUrl}
                   onChange={(e) => setResUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Type</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Type</label>
                   <select
                     value={resType}
                     onChange={(e) => setResType(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                    className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   >
                     {RESOURCE_TYPES.map((t) => (
                       <option key={t} value={t}>
@@ -453,7 +453,7 @@ export const MyRoadmap: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Skill Tag (optional)</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Skill Tag (optional)</label>
                   <SkillTagInput
                     selectedTags={resSkillTags}
                     onChange={setResSkillTags}
@@ -463,12 +463,12 @@ export const MyRoadmap: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Personal Notes</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Personal Notes</label>
                 <textarea
                   rows={2}
                   value={resNotes}
                   onChange={(e) => setResNotes(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                  className="w-full border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
               <button
