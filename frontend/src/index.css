@@ -7,12 +7,16 @@
   color-scheme: light;
 }
 
+html,
 body {
   margin: 0;
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Lock background page scrolling whenever any modal or bottom-sheet is open */
+html:has(.fixed.inset-0.z-50),
 body:has(.fixed.inset-0.z-50) {
   overflow: hidden;
 }

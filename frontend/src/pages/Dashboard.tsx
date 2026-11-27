@@ -114,7 +114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <div
                       role="dialog"
                       aria-label="Scoring System Explanation"
-                      className="absolute left-0 sm:left-1/2 sm:-translate-x-1/4 top-full mt-2 z-40 w-72 sm:w-80 p-3.5 rounded-xl bg-white border border-slate-200 shadow-xl text-left space-y-2"
+                      className="fixed inset-x-3 top-20 sm:inset-x-auto sm:absolute sm:left-0 sm:top-full sm:mt-2 z-40 sm:w-80 p-3.5 rounded-xl bg-white border border-slate-200 shadow-xl text-left space-y-2"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-bold text-slate-900">
@@ -265,7 +265,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       />
                     </div>
                   </div>
-                  {match.source_url && (
+                  {match.source_url ? (
                     <a
                       href={match.source_url}
                       target="_blank"
@@ -275,6 +275,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       Go and Apply
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 italic px-1 shrink-0">
+                      No apply link
+                    </span>
                   )}
                 </div>
               </div>
@@ -328,16 +332,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 onClick={() => handleOpenEvidence(skill)}
                 className="w-full text-left p-4 hover:bg-slate-50 transition flex flex-col gap-2"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
+                <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-sm font-bold text-slate-900 truncate">
                       {skill.canonical_name}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 truncate max-w-[130px] sm:max-w-none">
                       {skill.category}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 text-xs font-semibold text-blue-600">
+                  <div className="flex items-center gap-1.5 shrink-0 text-xs font-semibold text-blue-600">
                     <span>
                       {skill.distinct_job_count}/{summary.analysable_jobs_count} ({skill.coverage_percentage}%)
                     </span>
@@ -365,11 +369,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Mobile-Friendly Skill Evidence Modal / Bottom Sheet */}
       {activeSkill && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 overflow-hidden">
+          <div className="bg-white w-full max-w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl min-w-0">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-3 min-w-0">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
                   {activeSkill.canonical_name}
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -378,13 +382,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </div>
               <button
                 onClick={() => setActiveSkill(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto space-y-3">
+            <div className="p-4 overflow-y-auto overflow-x-hidden overscroll-contain space-y-3 min-w-0">
               {evidenceLoading ? (
                 <div className="py-8 text-center text-xs text-slate-500">Loading quotes...</div>
               ) : !evidence || evidence.items.length === 0 ? (
@@ -393,12 +397,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 evidence.items.map((item) => (
                   <div
                     key={`${item.job_id}-${item.requirement_type}`}
-                    className="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5"
+                    className="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5 min-w-0"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-900">{item.job_title}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
+                      <span className="text-xs font-bold text-slate-900 break-words min-w-0">
+                        {item.job_title}
+                      </span>
                       <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.requirement_type === 'Required'
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${item.requirement_type === 'Required'
                           ? 'bg-rose-50 text-rose-700 border border-rose-200'
                           : 'bg-blue-50 text-blue-700 border border-blue-200'
                           }`}
@@ -406,7 +412,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         {item.requirement_type}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-700 italic leading-relaxed">
+                    <p className="text-xs text-slate-700 italic leading-relaxed break-words">
                       &ldquo;{item.evidence_snippet}&rdquo;
                     </p>
                   </div>
@@ -419,11 +425,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Mobile-Friendly Job Details Modal / Bottom Sheet */}
       {(jobLoading || selectedJob || jobError) && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-200 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 overflow-hidden">
+          <div className="bg-white w-full max-w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl min-w-0">
+            <div className="p-4 border-b border-slate-200 flex items-start justify-between gap-3 min-w-0">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug break-words">
                   {selectedJob ? selectedJob.title : 'Job Details'}
                 </h3>
                 {selectedJob && (

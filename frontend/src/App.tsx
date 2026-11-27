@@ -78,7 +78,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800 pb-20 md:pb-0">
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 flex flex-col text-slate-800 pb-20 md:pb-0">
       <Header
         health={health}
         loading={healthLoading}
@@ -90,7 +90,7 @@ export const App: React.FC = () => {
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6">
+      <main className="flex-1 min-w-0 max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
         {activeTab === 'dashboard' && <Dashboard onNavigate={setActiveTab} />}
         {activeTab === 'jobs' && <JobLibrary />}
         {activeTab === 'explorer' && <SkillExplorer />}

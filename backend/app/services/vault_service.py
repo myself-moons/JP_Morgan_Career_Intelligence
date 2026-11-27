@@ -350,6 +350,15 @@ def _retrieve_relevant_chunks(
     ]
 
 
+def _clean_json_text(raw_text: str) -> str:
+    """Strips optional ```json markdown fences around model output."""
+    cleaned = (raw_text or "").strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    return cleaned.strip()
+
+
 def _compute_profile_hash(
     user_id: int,
     entries: List[ExperienceEntry],
@@ -553,11 +562,11 @@ Scoring rule for `fit_score` (integer 0-100):
         for try_model in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{try_model}:generateContent?key={api_key}"
             try:
-                resp = requests.post(url, json=payload, timeout=30)
+                resp = requests.post(url, json=payload, timeout=45)
                 if resp.status_code == 200:
                     candidates = resp.json().get("candidates", [])
                     if candidates:
-                        raw_json = candidates[0]["content"]["parts"][0]["text"].strip()
+                        raw_json = _clean_json_text(candidates[0]["content"]["parts"][0]["text"])
                         parsed = json.loads(raw_json)
                         raw_per_job = parsed.get("per_job_results", [])
                         per_job_list: List[PerJobComparison] = []
@@ -643,14 +652,29 @@ Scoring rule for `fit_score` (integer 0-100):
                 last_err_note = f"Gemini request error ({type(exc).__name__})"
 
     # Clean offline / fallback response (per-job breakdown)
+    # Score against the full available job corpus so Quick Estimates match Dashboard identically.
     per_job_offline: List[PerJobComparison] = []
     combined_for_score = f"{vault_text_blob}\n{resume_text_blob}"
+    quick_score_by_job: Dict[int, int] = {}
+    if entries or active_resume:
+        corpus_jobs = (
+            db.query(JobListing)
+            .filter(JobListing.status != "JD unavailable")
+            .filter(or_(JobListing.user_id.is_(None), JobListing.user_id == user_id))
+            .all()
+        )
+        corpus_ids = {cj.id for cj in corpus_jobs}
+        for j in jobs:
+            if j.id not in corpus_ids:
+                corpus_jobs.append(j)
+        for r in rank_top_jobs_for_resume(combined_for_score, corpus_jobs, top_n=None, db=db):
+            quick_score_by_job[r.job_id] = r.score
+
     for j in jobs:
         j_skills = _extract_skill_names_for_jobs(db, [j.id])
         j_cov = [s for s in j_skills if s.lower() in combined_user_text]
         j_miss = [s for s in j_skills if s.lower() not in combined_user_text]
-        offline_ranked = rank_top_jobs_for_resume(combined_for_score, [j], top_n=1, db=db)
-        quick_score = offline_ranked[0].score if offline_ranked else 0
+        quick_score = quick_score_by_job.get(j.id, 0)
         if not entries and not active_resume:
             j_sum = "Add Experience Vault entries or a resume to evaluate this role."
             j_sugg = ["Add your past projects/work in Experience Vault or upload a resume."]
@@ -688,6 +712,11 @@ Scoring rule for `fit_score` (integer 0-100):
             f"Consider addressing {', '.join(missing[:4])} if you have related experience." if missing else "Your history covers the extracted skills.",
         ]
 
+    fallback_banner = (
+        f"Requested {model_name} unavailable ({last_err_note}); showing Quick Estimate."
+        if api_key and (entries or active_resume) and 'last_err_note' in locals() and last_err_note
+        else None
+    )
     return VaultCompareResponse(
         job_ids=[j.id for j in jobs],
         job_titles=[j.title for j in jobs],
@@ -700,6 +729,7 @@ Scoring rule for `fit_score` (integer 0-100):
         is_llm_powered=False,
         is_cached=False,
         model_used="offline-deterministic",
+        fallback_note=fallback_banner,
     )
 
 
