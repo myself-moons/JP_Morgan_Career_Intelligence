@@ -110,7 +110,7 @@ class Settings:
     UPLOADS_DIR: Path = UPLOADS_DIR
     DATABASE_PATH: Path = DATA_DIR / "jci_local.db"
     DATABASE_URL: str = _normalize_database_url(
-        os.getenv("DATABASE_URL", f"sqlite:///{DATABASE_PATH.as_posix()}")
+        os.getenv("DATABASE_URL", "").strip() or f"sqlite:///{DATABASE_PATH.as_posix()}"
     )
 
     CORS_ORIGINS: List[str] = _parse_cors_origins()
